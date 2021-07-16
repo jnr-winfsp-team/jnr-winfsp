@@ -1,0 +1,6 @@
+target/
+target/*
+.idea/*
+jnr-winfsp.iml
+.classpath
+.settings/*

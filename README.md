@@ -1,6 +1,6 @@
 # jnr-winfsp
 
-WinFsp implementation in Java using Java Native Runtime (JNR)
+A Java binding for WinFsp using Java Native Runtime (JNR)
 
 _This is a work in progress and is currently not working correctly (help is appreciated :)_
 

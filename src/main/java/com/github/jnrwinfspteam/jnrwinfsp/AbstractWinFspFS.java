@@ -3,6 +3,7 @@ package com.github.jnrwinfspteam.jnrwinfsp;
 import com.github.jnrwinfspteam.jnrwinfsp.lib.LibKernel32;
 import com.github.jnrwinfspteam.jnrwinfsp.lib.LibWinFsp;
 import com.github.jnrwinfspteam.jnrwinfsp.lib.WinPathUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.result.ResultFileInfoAndContext;
 import com.github.jnrwinfspteam.jnrwinfsp.result.ResultSecurityAndAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.result.ResultVolumeInfo;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.*;
@@ -27,6 +28,8 @@ import java.util.stream.Collectors;
  * See {@link WinFspStubFS} for a way to implement only a subset of the operations.
  */
 public abstract class AbstractWinFspFS implements WinFspFS {
+
+    private static final int MAX_FILE_LENGTH = 260;
 
     private final LibWinFsp libWinFsp;
     private final LibKernel32 libKernel32;
@@ -185,7 +188,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
                                        pFileAttributes,
                                        pSecurityDescriptor,
                                        pSecurityDescriptorSize) -> {
-                ResultSecurityAndAttributes res = winfsp.getSecurityByName(fs(pFS), string(pFileName, 260));
+                ResultSecurityAndAttributes res = winfsp.getSecurityByName(fs(pFS), string(pFileName, MAX_FILE_LENGTH));
                 if (res.getNtStatus() == 0 || res.getNtStatus() == 0x104) {
                     if (pFileAttributes != null)
                         pFileAttributes.putInt(0, res.getFileAttributes());
@@ -212,17 +215,44 @@ public abstract class AbstractWinFspFS implements WinFspFS {
             });
         }
         if (isImplemented("create")) {
-//            fsi.Create.set((pFS,
-//                            pFileName,
-//                            createOptions,
-//                            grantedAccess,
-//                            fileAttributes,
-//                            pSecurityDescriptor,
-//                            allocationSize,
-//                            ppFileContext,
-//                            pFileInfo) -> {
-//
-//            });
+            fsi.Create.set((pFS,
+                            pFileName,
+                            createOptions,
+                            grantedAccess,
+                            fileAttributes,
+                            pSecurityDescriptor,
+                            allocationSize,
+                            ppFileContext,
+                            pFileInfo) -> {
+
+                ResultFileInfoAndContext res = winfsp.create(
+                        fs(pFS),
+                        string(pFileName, MAX_FILE_LENGTH),
+                        createOptions,
+                        grantedAccess,
+                        fileAttributes,
+                        pSecurityDescriptor,
+                        allocationSize);
+
+                if (res.getNtStatus() == 0) {
+                    FSP_FSCTL_FILE_INFO fi = FSP_FSCTL_FILE_INFO.of(pFileInfo).get();
+                    fi.FileAttributes.set(res.getFileAttributes());
+                    fi.ReparseTag.set(res.getReparseTag());
+                    fi.AllocationSize.set(res.getAllocationSize());
+                    fi.FileSize.set(res.getFileSize());
+                    fi.CreationTime.set(res.getCreationTime());
+                    fi.LastAccessTime.set(res.getLastAccessTime());
+                    fi.LastWriteTime.set(res.getLastWriteTime());
+                    fi.ChangeTime.set(res.getChangeTime());
+                    fi.IndexNumber.set(res.getIndexNumber());
+                    fi.HardLinks.set(res.getHardLinks());
+                    fi.EaSize.set(res.getEaSize());
+
+                    ppFileContext.putPointer(0, res.getFileContextP().getPointer());
+                }
+
+                return res.getNtStatus();
+            });
         }
     }
 

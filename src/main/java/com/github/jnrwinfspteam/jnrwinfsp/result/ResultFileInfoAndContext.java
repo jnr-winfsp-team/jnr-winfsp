@@ -1,18 +1,18 @@
 package com.github.jnrwinfspteam.jnrwinfsp.result;
 
 import com.github.jnrwinfspteam.jnrwinfsp.FileContext;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_FILE_INFO;
+import com.github.jnrwinfspteam.jnrwinfsp.util.Pointered;
 
 public class ResultFileInfoAndContext extends ResultFileInfo {
 
-    private final FileContext fileContext;
+    private final Pointered<FileContext> fileContextP;
 
-    public ResultFileInfoAndContext(int ntStatus, FSP_FSCTL_FILE_INFO fileInfo, FileContext fileContext) {
-        super(ntStatus, fileInfo);
-        this.fileContext = fileContext;
+    public ResultFileInfoAndContext(int ntStatus, Pointered<FileContext> fileContextP) {
+        super(ntStatus);
+        this.fileContextP = fileContextP;
     }
 
-    public final FileContext getFileContext() {
-        return fileContext;
+    public final Pointered<FileContext> getFileContextP() {
+        return fileContextP;
     }
 }

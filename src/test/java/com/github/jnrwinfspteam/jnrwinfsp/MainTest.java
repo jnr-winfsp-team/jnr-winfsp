@@ -1,7 +1,9 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
+import com.github.jnrwinfspteam.jnrwinfsp.result.ResultFileInfoAndContext;
 import com.github.jnrwinfspteam.jnrwinfsp.result.ResultVolumeInfo;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
+import jnr.ffi.Pointer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -65,6 +67,18 @@ public class MainTest {
                 e.printStackTrace();
                 return new ResultVolumeInfo(-1);
             }
+        }
+
+        @Override
+        public ResultFileInfoAndContext create(FSP_FILE_SYSTEM fileSystem,
+                                               String fileName,
+                                               int createOptions,
+                                               int grantedAccess,
+                                               int fileAttributes,
+                                               Pointer pSecurityDescriptor,
+                                               long allocationSize) {
+
+            return new ResultFileInfoAndContext(0, FileContext.create(jnr.ffi.Runtime.getSystemRuntime()));
         }
     }
 }

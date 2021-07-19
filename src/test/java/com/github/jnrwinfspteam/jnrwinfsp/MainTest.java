@@ -48,5 +48,23 @@ public class MainTest {
                 return new ResultVolumeInfo(-1);
             }
         }
+
+        @Override
+        public ResultVolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) {
+            System.out.println("=== SET VOLUME LABEL " + volumeLabel);
+            try {
+                FileStore fStore = Files.getFileStore(Paths.get("C:"));
+                return new ResultVolumeInfo(
+                        0,
+                        fStore.getTotalSpace(),
+                        fStore.getUsableSpace(),
+                        volumeLabel
+
+                );
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new ResultVolumeInfo(-1);
+            }
+        }
     }
 }

@@ -8,18 +8,23 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class MainTest {
     public static void main(String[] args) throws MountException, IOException {
+        Path mountPoint = null;
+        if (args.length > 0)
+            mountPoint = Paths.get(args[0]);
+
         var testFS = new TestWinFspFS();
-        System.out.println("Mounting...");
-        testFS.mountLocalDrive(null, true);
+        System.out.printf("Mounting %s...%n", mountPoint == null ? "" : mountPoint);
+        testFS.mountLocalDrive(mountPoint, true);
         try {
             System.out.println("<Press Enter to quit>");
             new BufferedReader(new InputStreamReader(System.in)).readLine();
         } finally {
-            System.out.println("Unmounting...");
+            System.out.printf("Unmounting %s...%n", mountPoint == null ? "" : mountPoint);
             testFS.unmountLocalDrive();
         }
     }

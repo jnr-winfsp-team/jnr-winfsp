@@ -8,6 +8,10 @@ public class FileContext extends Struct {
     // TODO
     // maybe let the user specify how this gets encoded/decoded to/from bytes
 
+    public static Pointered<FileContext> of(jnr.ffi.Pointer pointer) {
+        return Pointered.wrap(new FileContext(Runtime.getSystemRuntime()), pointer);
+    }
+
     public static Pointered<FileContext> create(Runtime runtime) {
         var fc = new FileContext(runtime);
 

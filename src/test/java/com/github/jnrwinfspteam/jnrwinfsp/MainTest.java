@@ -78,6 +78,7 @@ public class MainTest {
                                                Pointer pSecurityDescriptor,
                                                long allocationSize) {
 
+            System.out.println("=== CREATE " + fileName);
             return new ResultFileInfoAndContext(0, FileContext.create(jnr.ffi.Runtime.getSystemRuntime()));
         }
     }

@@ -3,6 +3,7 @@ package com.github.jnrwinfspteam.jnrwinfsp;
 import com.github.jnrwinfspteam.jnrwinfsp.lib.LibKernel32;
 import com.github.jnrwinfspteam.jnrwinfsp.lib.LibWinFsp;
 import com.github.jnrwinfspteam.jnrwinfsp.lib.WinPathUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.result.ResultFileInfo;
 import com.github.jnrwinfspteam.jnrwinfsp.result.ResultFileInfoAndContext;
 import com.github.jnrwinfspteam.jnrwinfsp.result.ResultSecurityAndAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.result.ResultVolumeInfo;
@@ -16,6 +17,8 @@ import jnr.ffi.Runtime;
 import jnr.ffi.byref.PointerByReference;
 
 import java.lang.reflect.Method;
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -30,6 +33,14 @@ import java.util.stream.Collectors;
 public abstract class AbstractWinFspFS implements WinFspFS {
 
     private static final int MAX_FILE_LENGTH = 260;
+    private static final Charset CS = initCharset();
+
+    private static Charset initCharset() {
+        if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN))
+            return StandardCharsets.UTF_16LE;
+        else
+            return StandardCharsets.UTF_16BE;
+    }
 
     private final LibWinFsp libWinFsp;
     private final LibKernel32 libKernel32;
@@ -75,7 +86,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
 
                 var ppFileSystem = new PointerByReference();
                 checkMountStatus("FileSystemCreate", libWinFsp.FspFileSystemCreate(
-                        stringBytes(FSP.FSCTL_DISK_DEVICE_NAME),
+                        FSP.FSCTL_DISK_DEVICE_NAME.getBytes(CS),
                         volumeParamsP.getPointer(),
                         fsInterfaceP.getPointer(),
                         ppFileSystem
@@ -232,26 +243,64 @@ public abstract class AbstractWinFspFS implements WinFspFS {
                         grantedAccess,
                         fileAttributes,
                         pSecurityDescriptor,
-                        allocationSize);
+                        allocationSize
+                );
 
                 if (res.getNtStatus() == 0) {
-                    FSP_FSCTL_FILE_INFO fi = FSP_FSCTL_FILE_INFO.of(pFileInfo).get();
-                    fi.FileAttributes.set(res.getFileAttributes());
-                    fi.ReparseTag.set(res.getReparseTag());
-                    fi.AllocationSize.set(res.getAllocationSize());
-                    fi.FileSize.set(res.getFileSize());
-                    fi.CreationTime.set(res.getCreationTime());
-                    fi.LastAccessTime.set(res.getLastAccessTime());
-                    fi.LastWriteTime.set(res.getLastWriteTime());
-                    fi.ChangeTime.set(res.getChangeTime());
-                    fi.IndexNumber.set(res.getIndexNumber());
-                    fi.HardLinks.set(res.getHardLinks());
-                    fi.EaSize.set(res.getEaSize());
-
+                    putFileInfo(pFileInfo, res);
                     ppFileContext.putPointer(0, res.getFileContextP().getPointer());
                 }
 
                 return res.getNtStatus();
+            });
+        }
+        if (isImplemented("open")) {
+            fsi.Open.set((pFS, pFileName, createOptions, grantedAccess, ppFileContext, pFileInfo) -> {
+                ResultFileInfoAndContext res = winfsp.open(
+                        fs(pFS),
+                        string(pFileName, MAX_FILE_LENGTH),
+                        createOptions,
+                        grantedAccess
+                );
+
+                if (res.getNtStatus() == 0) {
+                    putFileInfo(pFileInfo, res);
+                    ppFileContext.putPointer(0, res.getFileContextP().getPointer());
+                }
+
+                return res.getNtStatus();
+            });
+        }
+        if (isImplemented("overwrite")) {
+            fsi.Overwrite.set((pFS, pFileContext, fileAttributes, replaceFileAttributes, allocationSize, pFileInfo) -> {
+                ResultFileInfo res = winfsp.overwrite(
+                        fs(pFS),
+                        FileContext.of(pFileContext).get(),
+                        fileAttributes,
+                        replaceFileAttributes,
+                        allocationSize
+                );
+
+                if (res.getNtStatus() == 0) {
+                    putFileInfo(pFileInfo, res);
+                }
+
+                return res.getNtStatus();
+            });
+        }
+        if (isImplemented("cleanup")) {
+            fsi.Cleanup.set((pFS, pFileContext, pFileName, flags) -> {
+                winfsp.cleanup(
+                        fs(pFS),
+                        FileContext.of(pFileContext).get(),
+                        string(pFileName, MAX_FILE_LENGTH),
+                        flags
+                );
+            });
+        }
+        if (isImplemented("close")) {
+            fsi.Close.set((pFS, pFileContext) -> {
+                winfsp.close(fs(pFS), FileContext.of(pFileContext).get());
             });
         }
     }
@@ -285,17 +334,31 @@ public abstract class AbstractWinFspFS implements WinFspFS {
     }
 
     private static String string(Pointer pStr, int maxLength) {
-        return pStr.getString(0, maxLength, StandardCharsets.UTF_16LE);
-    }
-
-    private static byte[] stringBytes(String s) {
-        return s.getBytes(StandardCharsets.UTF_16LE);
+        if (pStr == null)
+            return null;
+        else
+            return pStr.getString(0, maxLength, CS);
     }
 
     private static byte[] pathBytes(Path path) {
         if (path == null)
             return null;
         else
-            return stringBytes(path.toString());
+            return path.toString().getBytes(CS);
+    }
+
+    private static void putFileInfo(Pointer pFileInfo, ResultFileInfo res) {
+        FSP_FSCTL_FILE_INFO fi = FSP_FSCTL_FILE_INFO.of(pFileInfo).get();
+        fi.FileAttributes.set(res.getFileAttributes());
+        fi.ReparseTag.set(res.getReparseTag());
+        fi.AllocationSize.set(res.getAllocationSize());
+        fi.FileSize.set(res.getFileSize());
+        fi.CreationTime.set(res.getCreationTime());
+        fi.LastAccessTime.set(res.getLastAccessTime());
+        fi.LastWriteTime.set(res.getLastWriteTime());
+        fi.ChangeTime.set(res.getChangeTime());
+        fi.IndexNumber.set(res.getIndexNumber());
+        fi.HardLinks.set(res.getHardLinks());
+        fi.EaSize.set(res.getEaSize());
     }
 }

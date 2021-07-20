@@ -70,7 +70,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
 
                 var ppFileSystem = new PointerByReference();
                 checkMountStatus("FileSystemCreate", libWinFsp.FspFileSystemCreate(
-                        FSHelper.getStringBytes(FSP.FSCTL_DISK_DEVICE_NAME),
+                        FSP.FSCTL_DISK_DEVICE_NAME.toCharArray(),
                         volumeParamsP.getPointer(),
                         fsInterfaceP.getPointer(),
                         ppFileSystem
@@ -85,7 +85,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
 
                 checkMountStatus("SetMountPoint", libWinFsp.FspFileSystemSetMountPoint(
                         pFileSystem,
-                        FSHelper.getPathBytes(mountPoint)
+                        mountPoint == null ? null : mountPoint.toString().toCharArray()
                 ));
 
                 checkMountStatus("StartDispatcher", libWinFsp.FspFileSystemStartDispatcher(

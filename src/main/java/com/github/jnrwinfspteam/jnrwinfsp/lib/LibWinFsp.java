@@ -1,7 +1,6 @@
 package com.github.jnrwinfspteam.jnrwinfsp.lib;
 
 import jnr.ffi.Pointer;
-import jnr.ffi.annotations.NulTerminate;
 import jnr.ffi.annotations.Out;
 import jnr.ffi.byref.PointerByReference;
 import jnr.ffi.types.u_int32_t;
@@ -19,8 +18,8 @@ public interface LibWinFsp {
      */
     @u_int32_t
     int FspFileSystemPreflight(
-            @NulTerminate byte[] devicePath,
-            @NulTerminate byte[] mountPoint
+            char[] devicePath,
+            char[] mountPoint
     );
 
     /**
@@ -37,7 +36,7 @@ public interface LibWinFsp {
      */
     @u_int32_t
     int FspFileSystemCreate(
-            @NulTerminate byte[] devicePath,
+            char[] devicePath,
             Pointer /* FSP_FSCTL_VOLUME_PARAMS */ volumeParams,
             Pointer /* FSP_FILE_SYSTEM_INTERFACE */ _interface,
             @Out PointerByReference pFileSystem
@@ -71,7 +70,7 @@ public interface LibWinFsp {
     @u_int32_t
     int FspFileSystemSetMountPoint(
             Pointer /* FSP_FILE_SYSTEM */ fileSystem,
-            @NulTerminate byte[] mountPoint
+            char[] mountPoint
     );
 
     /**

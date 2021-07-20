@@ -29,6 +29,7 @@ public class MainTest {
         } finally {
             System.out.printf("Unmounting %s...%n", mountPoint == null ? "" : mountPoint);
             testFS.unmountLocalDrive();
+            System.out.println("<done>");
         }
     }
 

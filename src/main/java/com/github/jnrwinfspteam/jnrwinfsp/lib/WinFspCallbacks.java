@@ -30,17 +30,17 @@ public final class WinFspCallbacks {
         /**
          * Set volume label.
          *
-         * @param pFileSystem  The file system on which this request is posted.
-         * @param pVolumeLabel The new label for the volume.
-         * @param pVolumeInfo  [out]
-         *                     Pointer to a structure that will receive the volume information on successful return
-         *                     from this call.
+         * @param pFileSystem The file system on which this request is posted.
+         * @param volumeLabel The new label for the volume.
+         * @param pVolumeInfo [out]
+         *                    Pointer to a structure that will receive the volume information on successful return
+         *                    from this call.
          * @return STATUS_SUCCESS or error code.
          */
         @Delegate
         @u_int32_t
         int SetVolumeLabel(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
-                           Pointer /* WSTR */ pVolumeLabel,
+                           String volumeLabel,
                            Pointer /* FSP_FSCTL_VOLUME_INFO */ pVolumeInfo
         );
     }
@@ -51,7 +51,7 @@ public final class WinFspCallbacks {
          * Get file or directory attributes and security descriptor given a file name.
          *
          * @param pFileSystem             The file system on which this request is posted.
-         * @param pFileName               The name of the file or directory to get the attributes and security descriptor for.
+         * @param fileName                The name of the file or directory to get the attributes and security descriptor for.
          * @param pFileAttributes         Pointer to a memory location that will receive the file attributes on successful return
          *                                from this call. May be NULL.
          *                                <p>
@@ -73,7 +73,7 @@ public final class WinFspCallbacks {
         @Delegate
         @u_int32_t
         int GetSecurityByName(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
-                              Pointer /* WSTR */ pFileName,
+                              String fileName,
                               Pointer /* UINT32 */ pFileAttributes /* or ReparsePointIndex */,
                               Pointer /* VOID */ pSecurityDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */,
                               Pointer /* SIZE_T */ pSecurityDescriptorSize
@@ -86,7 +86,7 @@ public final class WinFspCallbacks {
          * Create new file or directory.
          *
          * @param pFileSystem         The file system on which this request is posted.
-         * @param pFileName           The name of the file or directory to be created.
+         * @param fileName            The name of the file or directory to be created.
          * @param createOptions       Create options for this request. This parameter has the same meaning as the
          *                            CreateOptions parameter of the NtCreateFile API. User mode file systems should typically
          *                            only be concerned with the flag FILE_DIRECTORY_FILE, which is an instruction to create a
@@ -113,7 +113,7 @@ public final class WinFspCallbacks {
         @Delegate
         @u_int32_t
         int Create(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
-                   Pointer /* WSTR */ pFileName,
+                   String fileName,
                    @u_int32_t int createOptions,
                    @u_int32_t int grantedAccess,
                    @u_int32_t int fileAttributes,
@@ -130,7 +130,7 @@ public final class WinFspCallbacks {
          * Open a file or directory.
          *
          * @param pFileSystem   The file system on which this request is posted.
-         * @param pFileName     The name of the file or directory to be opened.
+         * @param fileName      The name of the file or directory to be opened.
          * @param createOptions Create options for this request. This parameter has the same meaning as the
          *                      CreateOptions parameter of the NtCreateFile API. User mode file systems typically
          *                      do not need to do anything special with respect to this parameter. Some file systems may
@@ -151,7 +151,7 @@ public final class WinFspCallbacks {
         @Delegate
         @u_int32_t
         int Open(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
-                 Pointer /* WSTR */ pFileName,
+                 String fileName,
                  @u_int32_t int createOptions,
                  @u_int32_t int grantedAccess,
                  Pointer /* PVOID */ ppFileContext,
@@ -235,7 +235,7 @@ public final class WinFspCallbacks {
          *
          * @param pFileSystem  The file system on which this request is posted.
          * @param pFileContext The file context of the file or directory to cleanup.
-         * @param pFileName    The name of the file or directory to cleanup. Sent only when a Delete is requested.
+         * @param fileName     The name of the file or directory to cleanup. Sent only when a Delete is requested.
          * @param flags        These flags determine whether the file was modified and whether to delete the file.
          *                     <p>
          *                     see
@@ -246,7 +246,7 @@ public final class WinFspCallbacks {
         @Delegate
         void Cleanup(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                      Pointer /* VOID */ pFileContext,
-                     Pointer /* WSTR */ pFileName,
+                     String fileName,
                      long flags
         );
     }
@@ -465,14 +465,14 @@ public final class WinFspCallbacks {
          *
          * @param pFileSystem  The file system on which this request is posted.
          * @param pFileContext The file context of the file or directory to test for deletion.
-         * @param pFileName    The name of the file or directory to test for deletion.
+         * @param fileName     The name of the file or directory to test for deletion.
          * @return STATUS_SUCCESS or error code.
          */
         @Delegate
         @u_int32_t
         int CanDelete(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                       Pointer /* VOID */ pFileContext,
-                      Pointer /* WSTR */ pFileName
+                      String fileName
         );
     }
 
@@ -490,8 +490,8 @@ public final class WinFspCallbacks {
          *
          * @param pFileSystem     The file system on which this request is posted.
          * @param pFileContext    The file context of the file or directory to be renamed.
-         * @param pFileName       The current name of the file or directory to rename.
-         * @param pNewFileName    The new name for the file or directory.
+         * @param fileName        The current name of the file or directory to rename.
+         * @param newFileName     The new name for the file or directory.
          * @param replaceIfExists Whether to replace a file that already exists at NewFileName.
          * @return STATUS_SUCCESS or error code.
          */
@@ -499,8 +499,8 @@ public final class WinFspCallbacks {
         @u_int32_t
         int Rename(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                    Pointer /* VOID */ pFileContext,
-                   Pointer /* WSTR */ pFileName,
-                   Pointer /* WSTR */ pNewFileName,
+                   String fileName,
+                   String newFileName,
                    boolean replaceIfExists
         );
     }
@@ -558,10 +558,10 @@ public final class WinFspCallbacks {
          *
          * @param pFileSystem       The file system on which this request is posted.
          * @param pFileContext      The file context of the directory to be read.
-         * @param pPattern          The pattern to match against files in this directory. Can be NULL. The file system
+         * @param pattern           The pattern to match against files in this directory. Can be NULL. The file system
          *                          can choose to ignore this parameter as the FSD will always perform its own pattern
          *                          matching on the returned results.
-         * @param pMarker           A file name that marks where in the directory to start reading. Files with names
+         * @param marker            A file name that marks where in the directory to start reading. Files with names
          *                          that are greater than (not equal to) this marker (in the directory order determined
          *                          by the file system) should be returned. Can be NULL.
          * @param pBuffer           Pointer to a buffer that will receive the results of the read operation.
@@ -577,8 +577,8 @@ public final class WinFspCallbacks {
         @u_int32_t
         int ReadDirectory(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                           Pointer /* VOID */ pFileContext,
-                          Pointer /* WSTR */ pPattern,
-                          Pointer /* WSTR */ pMarker,
+                          String pattern,
+                          String marker,
                           Pointer /* VOID */ pBuffer,
                           long length,
                           Pointer /* ULONG */ pBytesTransferred

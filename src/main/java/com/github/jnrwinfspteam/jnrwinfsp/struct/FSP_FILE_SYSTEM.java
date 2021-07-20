@@ -1,5 +1,6 @@
 package com.github.jnrwinfspteam.jnrwinfsp.struct;
 
+import com.github.jnrwinfspteam.jnrwinfsp.lib.FSP;
 import com.github.jnrwinfspteam.jnrwinfsp.util.Pointered;
 import jnr.ffi.NativeType;
 import jnr.ffi.Runtime;

@@ -1,4 +1,4 @@
-package com.github.jnrwinfspteam.jnrwinfsp.struct;
+package com.github.jnrwinfspteam.jnrwinfsp.lib;
 
 public final class FSP {
     public static final String FSCTL_DISK_DEVICE_NAME = "WinFsp.Disk";

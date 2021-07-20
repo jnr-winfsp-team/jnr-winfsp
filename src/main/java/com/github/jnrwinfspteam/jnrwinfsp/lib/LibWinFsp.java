@@ -1,7 +1,5 @@
 package com.github.jnrwinfspteam.jnrwinfsp.lib;
 
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP;
-
 import jnr.ffi.Pointer;
 import jnr.ffi.annotations.NulTerminate;
 import jnr.ffi.annotations.Out;

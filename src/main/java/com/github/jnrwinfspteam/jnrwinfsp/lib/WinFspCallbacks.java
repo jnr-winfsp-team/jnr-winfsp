@@ -564,7 +564,7 @@ public final class WinFspCallbacks {
          * @param pMarker           A file name that marks where in the directory to start reading. Files with names
          *                          that are greater than (not equal to) this marker (in the directory order determined
          *                          by the file system) should be returned. Can be NULL.
-         * @param buffer            Pointer to a buffer that will receive the results of the read operation.
+         * @param pBuffer           Pointer to a buffer that will receive the results of the read operation.
          * @param length            Length of data to read.
          * @param pBytesTransferred [out]
          *                          Pointer to a memory location that will receive the actual number of bytes read.
@@ -579,7 +579,7 @@ public final class WinFspCallbacks {
                           Pointer /* VOID */ pFileContext,
                           Pointer /* WSTR */ pPattern,
                           Pointer /* WSTR */ pMarker,
-                          Pointer /* VOID */ buffer,
+                          Pointer /* VOID */ pBuffer,
                           long length,
                           Pointer /* ULONG */ pBytesTransferred
         );

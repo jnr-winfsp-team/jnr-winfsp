@@ -52,7 +52,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public ResultFileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                                    Pointer fileContext,
+                                    Pointer pFileContext,
                                     int fileAttributes,
                                     boolean replaceFileAttributes,
                                     long allocationSize) {
@@ -61,20 +61,20 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public void cleanup(FSP_FILE_SYSTEM fileSystem, Pointer fileContext, String fileName, long flags) {
+    public void cleanup(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, String fileName, long flags) {
 
     }
 
     @Override
     @NotImplemented
-    public void close(FSP_FILE_SYSTEM fileSystem, Pointer fileContext) {
+    public void close(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext) {
 
     }
 
     @Override
     @NotImplemented
     public ResultRead read(FSP_FILE_SYSTEM fileSystem,
-                           Pointer fileContext,
+                           Pointer pFileContext,
                            Pointer pBuffer,
                            long offset,
                            long length) {
@@ -84,7 +84,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public ResultFileInfoWrite write(FSP_FILE_SYSTEM fileSystem,
-                                     Pointer fileContext,
+                                     Pointer pFileContext,
                                      Pointer pBuffer,
                                      long offset,
                                      long length,
@@ -95,20 +95,20 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public ResultFileInfo flush(FSP_FILE_SYSTEM fileSystem, Pointer fileContext) {
+    public ResultFileInfo flush(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext) {
         return null;
     }
 
     @Override
     @NotImplemented
-    public ResultFileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, Pointer fileContext) {
+    public ResultFileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext) {
         return null;
     }
 
     @Override
     @NotImplemented
     public ResultFileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
-                                       Pointer fileContext,
+                                       Pointer pFileContext,
                                        int fileAttributes,
                                        long creationTime,
                                        long lastAccessTime,
@@ -120,7 +120,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public ResultFileInfo setFileSize(FSP_FILE_SYSTEM fileSystem,
-                                      Pointer fileContext,
+                                      Pointer pFileContext,
                                       long newSize,
                                       boolean setAllocationSize) {
         return null;
@@ -128,14 +128,14 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public Result canDelete(FSP_FILE_SYSTEM fileSystem, Pointer fileContext, String fileName) {
+    public Result canDelete(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, String fileName) {
         return null;
     }
 
     @Override
     @NotImplemented
     public Result rename(FSP_FILE_SYSTEM fileSystem,
-                         Pointer fileContext,
+                         Pointer pFileContext,
                          String fileName,
                          String newFileName,
                          boolean replaceIfExists) {
@@ -144,14 +144,14 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, Pointer fileContext) {
+    public ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext) {
         return null;
     }
 
     @Override
     @NotImplemented
     public Result setSecurity(FSP_FILE_SYSTEM fileSystem,
-                              Pointer fileContext,
+                              Pointer pFileContext,
                               int securityInformation,
                               Pointer pModificationDescriptor) {
         return null;
@@ -160,7 +160,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
-                                    Pointer fileContext,
+                                    Pointer pFileContext,
                                     String pattern,
                                     String marker,
                                     Pointer pBuffer,

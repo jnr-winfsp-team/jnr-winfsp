@@ -111,7 +111,7 @@ public interface WinFspFS extends Mountable {
      * Overwrite a file.
      *
      * @param fileSystem            The file system on which this request is posted.
-     * @param fileContext           The file context of the file to overwrite.
+     * @param pFileContext          The file context of the file to overwrite.
      * @param fileAttributes        File attributes to apply to the overwritten file.
      * @param replaceFileAttributes When TRUE the existing file attributes should be replaced with the new ones.
      *                              When FALSE the existing file attributes should be merged (or'ed) with the new ones.
@@ -123,7 +123,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     ResultFileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                             Pointer fileContext,
+                             Pointer pFileContext,
                              int fileAttributes,
                              boolean replaceFileAttributes,
                              long allocationSize
@@ -174,29 +174,29 @@ public interface WinFspFS extends Mountable {
      * PostCleanupWhenModifiedOnly flag. In this case the FSD will only post Cleanup requests when
      * the file was modified/deleted.
      *
-     * @param fileSystem  The file system on which this request is posted.
-     * @param fileContext The file context of the file or directory to cleanup.
-     * @param fileName    The name of the file or directory to cleanup. Sent only when a Delete is requested.
-     * @param flags       These flags determine whether the file was modified and whether to delete the file.
+     * @param fileSystem   The file system on which this request is posted.
+     * @param pFileContext The file context of the file or directory to cleanup.
+     * @param fileName     The name of the file or directory to cleanup. Sent only when a Delete is requested.
+     * @param flags        These flags determine whether the file was modified and whether to delete the file.
      */
-    void cleanup(FSP_FILE_SYSTEM fileSystem, Pointer fileContext, String fileName, long flags);
+    void cleanup(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, String fileName, long flags);
 
     /**
      * Close a file.
      *
-     * @param fileSystem  The file system on which this request is posted.
-     * @param fileContext The file context of the file or directory to be closed.
+     * @param fileSystem   The file system on which this request is posted.
+     * @param pFileContext The file context of the file or directory to be closed.
      */
-    void close(FSP_FILE_SYSTEM fileSystem, Pointer fileContext);
+    void close(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext);
 
     /**
      * Read a file.
      *
-     * @param fileSystem  The file system on which this request is posted.
-     * @param fileContext The file context of the file to be read.
-     * @param pBuffer     Pointer to a buffer that will receive the results of the read operation.
-     * @param offset      Offset within the file to read from.
-     * @param length      Length of data to read.
+     * @param fileSystem   The file system on which this request is posted.
+     * @param pFileContext The file context of the file to be read.
+     * @param pBuffer      Pointer to a buffer that will receive the results of the read operation.
+     * @param offset       Offset within the file to read from.
+     * @param length       Length of data to read.
      * @return result with:
      * <ul>
      *     <li>STATUS_SUCCESS(0) and actual number of bytes read</li>
@@ -206,13 +206,13 @@ public interface WinFspFS extends Mountable {
      * <p>
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      */
-    ResultRead read(FSP_FILE_SYSTEM fileSystem, Pointer fileContext, Pointer pBuffer, long offset, long length);
+    ResultRead read(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, Pointer pBuffer, long offset, long length);
 
     /**
      * Write a file.
      *
      * @param fileSystem       The file system on which this request is posted.
-     * @param fileContext      The file context of the file to be written.
+     * @param pFileContext     The file context of the file to be written.
      * @param pBuffer          Pointer to a buffer that contains the data to write.
      * @param offset           Offset within the file to write to.
      * @param length           Length of data to write.
@@ -229,7 +229,7 @@ public interface WinFspFS extends Mountable {
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      */
     ResultFileInfoWrite write(FSP_FILE_SYSTEM fileSystem,
-                              Pointer fileContext,
+                              Pointer pFileContext,
                               Pointer pBuffer,
                               long offset,
                               long length,
@@ -242,8 +242,8 @@ public interface WinFspFS extends Mountable {
      * <p>
      * Note that the FSD will also flush all file/volume caches prior to invoking this operation.
      *
-     * @param fileSystem  The file system on which this request is posted.
-     * @param fileContext The file context of the file to be flushed. When NULL the whole volume is being flushed.
+     * @param fileSystem   The file system on which this request is posted.
+     * @param pFileContext The file context of the file to be flushed. When NULL the whole volume is being flushed.
      * @return result with:
      * <ul>
      *    <li>STATUS_SUCCESS(0) and (non-null) file information (includes file attributes, file times, etc.) when
@@ -252,7 +252,7 @@ public interface WinFspFS extends Mountable {
      *    <li>OR error code and null file information</li>
      * </ul>
      */
-    ResultFileInfo flush(FSP_FILE_SYSTEM fileSystem, Pointer fileContext);
+    ResultFileInfo flush(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext);
 
     /**
      * Get file or directory information.
@@ -271,7 +271,7 @@ public interface WinFspFS extends Mountable {
      * Set file or directory basic information.
      *
      * @param fileSystem     The file system on which this request is posted.
-     * @param fileContext    The file context of the file or directory to set information for.
+     * @param pFileContext   The file context of the file or directory to set information for.
      * @param fileAttributes File attributes to apply to the file or directory. If the value INVALID_FILE_ATTRIBUTES
      *                       is sent, the file attributes should not be changed.
      * @param creationTime   Creation time to apply to the file or directory. If the value 0 is sent, the creation
@@ -289,7 +289,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     ResultFileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
-                                Pointer fileContext,
+                                Pointer pFileContext,
                                 int fileAttributes,
                                 long creationTime,
                                 long lastAccessTime,
@@ -318,7 +318,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      *
      * @param fileSystem        The file system on which this request is posted.
-     * @param fileContext       The file context of the file to set the file/allocation size for.
+     * @param pFileContext      The file context of the file to set the file/allocation size for.
      * @param newSize           New file/allocation size to apply to the file.
      * @param setAllocationSize If TRUE, then the allocation size is being set. if FALSE, then the file size is being set.
      * @return result with:
@@ -328,7 +328,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     ResultFileInfo setFileSize(FSP_FILE_SYSTEM fileSystem,
-                               Pointer fileContext,
+                               Pointer pFileContext,
                                long newSize,
                                boolean setAllocationSize
     );
@@ -349,16 +349,16 @@ public interface WinFspFS extends Mountable {
      * NOTE: If both CanDelete and SetDelete are defined, SetDelete takes precedence. However
      * most file systems need only implement the CanDelete operation.
      *
-     * @param fileSystem  The file system on which this request is posted.
-     * @param fileContext The file context of the file or directory to test for deletion.
-     * @param fileName    The name of the file or directory to test for deletion.
+     * @param fileSystem   The file system on which this request is posted.
+     * @param pFileContext The file context of the file or directory to test for deletion.
+     * @param fileName     The name of the file or directory to test for deletion.
      * @return result with:
      * <ul>
      *    <li>STATUS_SUCCESS(0)</li>
      *    <li>OR error code</li>
      * </ul>
      */
-    Result canDelete(FSP_FILE_SYSTEM fileSystem, Pointer fileContext, String fileName);
+    Result canDelete(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, String fileName);
 
     /**
      * Renames a file or directory.
@@ -371,7 +371,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      *
      * @param fileSystem      The file system on which this request is posted.
-     * @param fileContext     The file context of the file or directory to be renamed.
+     * @param pFileContext    The file context of the file or directory to be renamed.
      * @param fileName        The current name of the file or directory to rename.
      * @param newFileName     The new name for the file or directory.
      * @param replaceIfExists Whether to replace a file that already exists at NewFileName.
@@ -382,7 +382,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     Result rename(FSP_FILE_SYSTEM fileSystem,
-                  Pointer fileContext,
+                  Pointer pFileContext,
                   String fileName,
                   String newFileName,
                   boolean replaceIfExists
@@ -391,22 +391,22 @@ public interface WinFspFS extends Mountable {
     /**
      * Get file or directory security descriptor.
      *
-     * @param fileSystem  The file system on which this request is posted.
-     * @param fileContext The file context of the file or directory to get the security descriptor for.
+     * @param fileSystem   The file system on which this request is posted.
+     * @param pFileContext The file context of the file or directory to get the security descriptor for.
      * @return result with:
      * <ul>
      *     <li>STATUS_SUCCESS(0) and (non-null) security descriptor and size</li>
      *     <li>OR error code and null security descriptor and size</li>
      * </ul>
      */
-    ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, Pointer fileContext);
+    ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext);
 
     /**
      * Set file or directory security descriptor. See FspSetSecurityDescriptor or FspDeleteSecurityDescriptor
      * for more details.
      *
      * @param fileSystem              The file system on which this request is posted.
-     * @param fileContext             The file context of the file or directory to set the security descriptor for.
+     * @param pFileContext            The file context of the file or directory to set the security descriptor for.
      * @param securityInformation     Describes what parts of the file or directory security descriptor should
      *                                be modified.
      * @param pModificationDescriptor Describes the modifications to apply to the file or directory security descriptor.
@@ -417,7 +417,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     Result setSecurity(FSP_FILE_SYSTEM fileSystem,
-                       Pointer fileContext,
+                       Pointer pFileContext,
                        int securityInformation,
                        Pointer pModificationDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */
     );
@@ -425,16 +425,16 @@ public interface WinFspFS extends Mountable {
     /**
      * Read a directory. See FspFileSystemAddDirInfo for more details.
      *
-     * @param fileSystem  The file system on which this request is posted.
-     * @param fileContext The file context of the directory to be read.
-     * @param pattern     The pattern to match against files in this directory. Can be NULL. The file system
-     *                    can choose to ignore this parameter as the FSD will always perform its own pattern
-     *                    matching on the returned results.
-     * @param marker      A file name that marks where in the directory to start reading. Files with names
-     *                    that are greater than (not equal to) this marker (in the directory order determined
-     *                    by the file system) should be returned. Can be NULL.
-     * @param pBuffer     Pointer to a buffer that will receive the results of the read operation.
-     * @param length      Length of data to read.
+     * @param fileSystem   The file system on which this request is posted.
+     * @param pFileContext The file context of the directory to be read.
+     * @param pattern      The pattern to match against files in this directory. Can be NULL. The file system
+     *                     can choose to ignore this parameter as the FSD will always perform its own pattern
+     *                     matching on the returned results.
+     * @param marker       A file name that marks where in the directory to start reading. Files with names
+     *                     that are greater than (not equal to) this marker (in the directory order determined
+     *                     by the file system) should be returned. Can be NULL.
+     * @param pBuffer      Pointer to a buffer that will receive the results of the read operation.
+     * @param length       Length of data to read.
      * @return result with:
      * <ul>
      *     <li>STATUS_SUCCESS(0) and actual number of bytes read</li>
@@ -445,7 +445,7 @@ public interface WinFspFS extends Mountable {
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      */
     ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
-                             Pointer fileContext,
+                             Pointer pFileContext,
                              String pattern,
                              String marker,
                              Pointer pBuffer,

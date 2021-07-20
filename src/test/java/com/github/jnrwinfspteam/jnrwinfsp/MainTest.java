@@ -95,7 +95,7 @@ public class MainTest {
 
         @Override
         public ResultFileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                                        Pointer fileContext,
+                                        Pointer pFileContext,
                                         int fileAttributes,
                                         boolean replaceFileAttributes,
                                         long allocationSize) {

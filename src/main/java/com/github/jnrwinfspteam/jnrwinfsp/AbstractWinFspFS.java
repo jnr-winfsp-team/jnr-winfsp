@@ -70,7 +70,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
 
                 var ppFileSystem = new PointerByReference();
                 checkMountStatus("FileSystemCreate", libWinFsp.FspFileSystemCreate(
-                        Helper.getStringBytes(FSP.FSCTL_DISK_DEVICE_NAME),
+                        FSHelper.getStringBytes(FSP.FSCTL_DISK_DEVICE_NAME),
                         volumeParamsP.getPointer(),
                         fsInterfaceP.getPointer(),
                         ppFileSystem
@@ -85,7 +85,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
 
                 checkMountStatus("SetMountPoint", libWinFsp.FspFileSystemSetMountPoint(
                         pFileSystem,
-                        Helper.getPathBytes(mountPoint)
+                        FSHelper.getPathBytes(mountPoint)
                 ));
 
                 checkMountStatus("StartDispatcher", libWinFsp.FspFileSystemStartDispatcher(
@@ -149,30 +149,44 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         fsInterfaceP = FSP_FILE_SYSTEM_INTERFACE.create(runtime);
         FSP_FILE_SYSTEM_INTERFACE fsi = fsInterfaceP.get();
 
-        if (isImplemented("getVolumeInfo")) {
-            Helper.initGetVolumeInfo(fsi, this);
-        }
-        if (isImplemented("setVolumeLabel")) {
-            Helper.initSetVolumeLabel(fsi, this);
-        }
-        if (isImplemented("getSecurityByName")) {
-            Helper.initGetSecurityByName(fsi, this);
-        }
-        if (isImplemented("create")) {
-            Helper.initCreate(fsi, this);
-        }
-        if (isImplemented("open")) {
-            Helper.initOpen(fsi, this);
-        }
-        if (isImplemented("overwrite")) {
-            Helper.initOverwrite(fsi, this);
-        }
-        if (isImplemented("cleanup")) {
-            Helper.initCleanup(fsi, this);
-        }
-        if (isImplemented("close")) {
-            Helper.initClose(fsi, this);
-        }
+        if (isImplemented("getVolumeInfo"))
+            FSHelper.initGetVolumeInfo(fsi, this);
+        if (isImplemented("setVolumeLabel"))
+            FSHelper.initSetVolumeLabel(fsi, this);
+        if (isImplemented("getSecurityByName"))
+            FSHelper.initGetSecurityByName(fsi, this);
+        if (isImplemented("create"))
+            FSHelper.initCreate(fsi, this);
+        if (isImplemented("open"))
+            FSHelper.initOpen(fsi, this);
+        if (isImplemented("overwrite"))
+            FSHelper.initOverwrite(fsi, this);
+        if (isImplemented("cleanup"))
+            FSHelper.initCleanup(fsi, this);
+        if (isImplemented("close"))
+            FSHelper.initClose(fsi, this);
+        if (isImplemented("read"))
+            FSHelper.initRead(fsi, this);
+        if (isImplemented("write"))
+            FSHelper.initWrite(fsi, this);
+        if (isImplemented("flush"))
+            FSHelper.initFlush(fsi, this);
+        if (isImplemented("getFileInfo"))
+            FSHelper.initGetFileInfo(fsi, this);
+        if (isImplemented("setBasicInfo"))
+            FSHelper.initSetBasicInfo(fsi, this);
+        if (isImplemented("setFileSize"))
+            FSHelper.initSetFileSize(fsi, this);
+        if (isImplemented("canDelete"))
+            FSHelper.initCanDelete(fsi, this);
+        if (isImplemented("rename"))
+            FSHelper.initRename(fsi, this);
+        if (isImplemented("getSecurity"))
+            FSHelper.initGetSecurity(fsi, this);
+        if (isImplemented("setSecurity"))
+            FSHelper.initSetSecurity(fsi, this);
+        if (isImplemented("readDirectory"))
+            FSHelper.initReadDirectory(fsi, this);
     }
 
     private boolean isImplemented(String funcName) {

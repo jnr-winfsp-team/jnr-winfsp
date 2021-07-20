@@ -115,7 +115,7 @@ final class Helper {
 
             if (res.getNtStatus() == 0) {
                 putFileInfo(pFileInfo, res);
-                ppFileContext.putPointer(0, res.getFileContextP().getPointer());
+                putFileContext(ppFileContext, res);
             }
 
             return res.getNtStatus();
@@ -133,7 +133,7 @@ final class Helper {
 
             if (res.getNtStatus() == 0) {
                 putFileInfo(pFileInfo, res);
-                ppFileContext.putPointer(0, res.getFileContextP().getPointer());
+                putFileContext(ppFileContext, res);
             }
 
             return res.getNtStatus();
@@ -144,7 +144,7 @@ final class Helper {
         fsi.Overwrite.set((pFS, pFileContext, fileAttributes, replaceFileAttributes, allocationSize, pFileInfo) -> {
             ResultFileInfo res = winfsp.overwrite(
                     fs(pFS),
-                    FileContext.of(pFileContext).get(),
+                    pFileContext,
                     fileAttributes,
                     replaceFileAttributes,
                     allocationSize
@@ -162,7 +162,7 @@ final class Helper {
         fsi.Cleanup.set((pFS, pFileContext, pFileName, flags) -> {
             winfsp.cleanup(
                     fs(pFS),
-                    FileContext.of(pFileContext).get(),
+                    pFileContext,
                     string(pFileName, MAX_FILE_LENGTH),
                     flags
             );
@@ -171,7 +171,7 @@ final class Helper {
 
     static void initClose(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Close.set((pFS, pFileContext) -> {
-            winfsp.close(fs(pFS), FileContext.of(pFileContext).get());
+            winfsp.close(fs(pFS), pFileContext);
         });
     }
 
@@ -199,5 +199,9 @@ final class Helper {
         fi.IndexNumber.set(res.getIndexNumber());
         fi.HardLinks.set(res.getHardLinks());
         fi.EaSize.set(res.getEaSize());
+    }
+
+    private static void putFileContext(Pointer ppFileContext, ResultFileInfoAndContext res) {
+        ppFileContext.putPointer(0, res.getpFileContext());
     }
 }

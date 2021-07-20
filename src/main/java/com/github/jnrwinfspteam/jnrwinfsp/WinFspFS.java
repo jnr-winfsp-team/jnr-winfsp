@@ -123,7 +123,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     ResultFileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                             FileContext fileContext,
+                             Pointer fileContext,
                              int fileAttributes,
                              boolean replaceFileAttributes,
                              long allocationSize
@@ -179,7 +179,7 @@ public interface WinFspFS extends Mountable {
      * @param fileName    The name of the file or directory to cleanup. Sent only when a Delete is requested.
      * @param flags       These flags determine whether the file was modified and whether to delete the file.
      */
-    void cleanup(FSP_FILE_SYSTEM fileSystem, FileContext fileContext, String fileName, long flags);
+    void cleanup(FSP_FILE_SYSTEM fileSystem, Pointer fileContext, String fileName, long flags);
 
     /**
      * Close a file.
@@ -187,7 +187,7 @@ public interface WinFspFS extends Mountable {
      * @param fileSystem  The file system on which this request is posted.
      * @param fileContext The file context of the file or directory to be closed.
      */
-    void close(FSP_FILE_SYSTEM fileSystem, FileContext fileContext);
+    void close(FSP_FILE_SYSTEM fileSystem, Pointer fileContext);
 
     /**
      * Read a file.
@@ -206,7 +206,7 @@ public interface WinFspFS extends Mountable {
      * <p>
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      */
-    ResultRead read(FSP_FILE_SYSTEM fileSystem, FileContext fileContext, Pointer pBuffer, long offset, long length);
+    ResultRead read(FSP_FILE_SYSTEM fileSystem, Pointer fileContext, Pointer pBuffer, long offset, long length);
 
     /**
      * Write a file.
@@ -229,7 +229,7 @@ public interface WinFspFS extends Mountable {
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      */
     ResultFileInfoWrite write(FSP_FILE_SYSTEM fileSystem,
-                              FileContext fileContext,
+                              Pointer fileContext,
                               Pointer pBuffer,
                               long offset,
                               long length,
@@ -252,7 +252,7 @@ public interface WinFspFS extends Mountable {
      *    <li>OR error code and null file information</li>
      * </ul>
      */
-    ResultFileInfo flush(FSP_FILE_SYSTEM fileSystem, FileContext fileContext);
+    ResultFileInfo flush(FSP_FILE_SYSTEM fileSystem, Pointer fileContext);
 
     /**
      * Get file or directory information.
@@ -265,7 +265,7 @@ public interface WinFspFS extends Mountable {
      *    <li>OR error code and null file information</li>
      * </ul>
      */
-    ResultFileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, FileContext pFileContext);
+    ResultFileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext);
 
     /**
      * Set file or directory basic information.
@@ -289,7 +289,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     ResultFileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
-                                FileContext fileContext,
+                                Pointer fileContext,
                                 int fileAttributes,
                                 long creationTime,
                                 long lastAccessTime,
@@ -328,7 +328,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     ResultFileInfo setFileSize(FSP_FILE_SYSTEM fileSystem,
-                               FileContext fileContext,
+                               Pointer fileContext,
                                long newSize,
                                boolean setAllocationSize
     );
@@ -358,7 +358,7 @@ public interface WinFspFS extends Mountable {
      *    <li>OR error code</li>
      * </ul>
      */
-    Result canDelete(FSP_FILE_SYSTEM fileSystem, FileContext fileContext, String fileName);
+    Result canDelete(FSP_FILE_SYSTEM fileSystem, Pointer fileContext, String fileName);
 
     /**
      * Renames a file or directory.
@@ -382,7 +382,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     Result rename(FSP_FILE_SYSTEM fileSystem,
-                  FileContext fileContext,
+                  Pointer fileContext,
                   String fileName,
                   String newFileName,
                   boolean replaceIfExists
@@ -399,7 +399,7 @@ public interface WinFspFS extends Mountable {
      *     <li>OR error code and null security descriptor and size</li>
      * </ul>
      */
-    ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, FileContext fileContext);
+    ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, Pointer fileContext);
 
     /**
      * Set file or directory security descriptor. See FspSetSecurityDescriptor or FspDeleteSecurityDescriptor
@@ -417,7 +417,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     Result setSecurity(FSP_FILE_SYSTEM fileSystem,
-                       FileContext fileContext,
+                       Pointer fileContext,
                        int securityInformation,
                        Pointer pModificationDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */
     );
@@ -445,7 +445,7 @@ public interface WinFspFS extends Mountable {
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      */
     ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
-                             FileContext fileContext,
+                             Pointer fileContext,
                              String pattern,
                              String marker,
                              Pointer pBuffer,

@@ -80,7 +80,7 @@ public class MainTest {
                                                long allocationSize) {
 
             System.out.println("=== CREATE " + fileName);
-            return new ResultFileInfoAndContext(0, FileContext.create(jnr.ffi.Runtime.getSystemRuntime()));
+            return new ResultFileInfoAndContext(0, Pointer.newIntPointer(jnr.ffi.Runtime.getSystemRuntime(), 0));
         }
 
         @Override
@@ -90,12 +90,12 @@ public class MainTest {
                                              int grantedAccess) {
 
             System.out.println("=== OPEN " + fileName);
-            return new ResultFileInfoAndContext(0, FileContext.create(jnr.ffi.Runtime.getSystemRuntime()));
+            return new ResultFileInfoAndContext(0, Pointer.newIntPointer(jnr.ffi.Runtime.getSystemRuntime(), 0));
         }
 
         @Override
         public ResultFileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                                        FileContext fileContext,
+                                        Pointer fileContext,
                                         int fileAttributes,
                                         boolean replaceFileAttributes,
                                         long allocationSize) {

@@ -1,5 +1,6 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
+import com.github.jnrwinfspteam.jnrwinfsp.result.ResultFileInfo;
 import com.github.jnrwinfspteam.jnrwinfsp.result.ResultFileInfoAndContext;
 import com.github.jnrwinfspteam.jnrwinfsp.result.ResultVolumeInfo;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
@@ -80,6 +81,27 @@ public class MainTest {
 
             System.out.println("=== CREATE " + fileName);
             return new ResultFileInfoAndContext(0, FileContext.create(jnr.ffi.Runtime.getSystemRuntime()));
+        }
+
+        @Override
+        public ResultFileInfoAndContext open(FSP_FILE_SYSTEM fileSystem,
+                                             String fileName,
+                                             int createOptions,
+                                             int grantedAccess) {
+
+            System.out.println("=== OPEN " + fileName);
+            return new ResultFileInfoAndContext(0, FileContext.create(jnr.ffi.Runtime.getSystemRuntime()));
+        }
+
+        @Override
+        public ResultFileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
+                                        FileContext fileContext,
+                                        int fileAttributes,
+                                        boolean replaceFileAttributes,
+                                        long allocationSize) {
+
+            System.out.println("=== OVERWRITE");
+            return new ResultFileInfo(0);
         }
     }
 }

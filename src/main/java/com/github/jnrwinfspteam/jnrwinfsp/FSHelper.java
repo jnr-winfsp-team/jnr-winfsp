@@ -1,5 +1,6 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
+import com.github.jnrwinfspteam.jnrwinfsp.lib.StringUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.result.*;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM_INTERFACE;
@@ -7,24 +8,10 @@ import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_FILE_INFO;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_VOLUME_INFO;
 import jnr.ffi.Pointer;
 
-import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.*;
 
 final class FSHelper {
-    private static final ThreadLocal<Reference<CharsetDecoder>> localDecoder = new ThreadLocal<>();
-    private static final int terminatorLength = 2;
-    private static final Charset CS;
-
-    static {
-        if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN))
-            CS = StandardCharsets.UTF_16LE;
-        else
-            CS = StandardCharsets.UTF_16BE;
-    }
-
     static void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.GetVolumeInfo.set((pFS, pVolumeInfo) -> {
             ResultVolumeInfo res = winfsp.getVolumeInfo(fs(pFS));
@@ -355,7 +342,7 @@ final class FSHelper {
         Search:
         for (int idx = 0; ; ) {
             idx += pStr.indexOf(idx, (byte) 0);
-            for (int tcount = 1; tcount < terminatorLength; tcount++) {
+            for (int tcount = 1; tcount < StringUtils.CS_BYTES_PER_CHAR; tcount++) {
                 byte b = pStr.getByte(idx + tcount);
                 if (b != 0) {
                     idx += tcount;
@@ -365,31 +352,16 @@ final class FSHelper {
 
             // Small fix here to accommodate enough bytes for the string.
             // NOTE: this WILL NOT make the string include a null character
-            while (idx % terminatorLength != 0)
+            while (idx % StringUtils.CS_BYTES_PER_CHAR != 0)
                 idx++;
 
             byte[] bytes = new byte[idx];
             pStr.get(0, bytes, 0, bytes.length);
             try {
-                return getDecoder().reset().decode(ByteBuffer.wrap(bytes)).toString();
+                return StringUtils.getDecoder().reset().decode(ByteBuffer.wrap(bytes)).toString();
             } catch (CharacterCodingException cce) {
                 throw new RuntimeException(cce);
             }
         }
-    }
-
-    private static CharsetDecoder getDecoder() {
-        Reference<CharsetDecoder> ref = localDecoder.get();
-        CharsetDecoder decoder;
-        return ref != null && (decoder = ref.get()) != null && decoder.charset() == CS
-                ? decoder : initDecoder();
-    }
-
-    private static CharsetDecoder initDecoder() {
-        CharsetDecoder decoder = CS.newDecoder();
-        decoder.onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
-        localDecoder.set(new SoftReference<>(decoder));
-
-        return decoder;
     }
 }

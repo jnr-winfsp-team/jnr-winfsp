@@ -1,9 +1,6 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
-import com.github.jnrwinfspteam.jnrwinfsp.lib.FSP;
-import com.github.jnrwinfspteam.jnrwinfsp.lib.LibKernel32;
-import com.github.jnrwinfspteam.jnrwinfsp.lib.LibWinFsp;
-import com.github.jnrwinfspteam.jnrwinfsp.lib.WinPathUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.lib.*;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.*;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_VOLUME_PARAMS.FSAttr;
 import com.github.jnrwinfspteam.jnrwinfsp.util.Pointered;
@@ -28,6 +25,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
 
     private final LibWinFsp libWinFsp;
     private final LibKernel32 libKernel32;
+    private final LibAdvapi32 libAdvapi32;
     private final Object mountLock;
     private boolean mounted;
     private final Set<String> notImplementedMethods;
@@ -43,6 +41,10 @@ public abstract class AbstractWinFspFS implements WinFspFS {
                 .load();
         this.libKernel32 = LibraryLoader.create(LibKernel32.class)
                 .library("kernel32.dll")
+                .failImmediately()
+                .load();
+        this.libAdvapi32 = LibraryLoader.create(LibAdvapi32.class)
+                .library("Advapi32.dll")
                 .failImmediately()
                 .load();
         this.mountLock = new Object();

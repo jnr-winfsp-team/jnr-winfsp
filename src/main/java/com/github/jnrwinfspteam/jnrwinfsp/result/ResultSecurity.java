@@ -7,6 +7,10 @@ public class ResultSecurity extends Result {
     private final Pointer securityDescriptor; /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */
     private final int securityDescriptorSize;
 
+    public ResultSecurity(Pointer securityDescriptor, int securityDescriptorSize) {
+        this(0, securityDescriptor, securityDescriptorSize);
+    }
+
     public ResultSecurity(int ntStatus,
                           Pointer securityDescriptor,
                           int securityDescriptorSize) {

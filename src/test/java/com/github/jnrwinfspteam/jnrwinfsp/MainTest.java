@@ -1,8 +1,8 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
-import com.github.jnrwinfspteam.jnrwinfsp.result.ResultFileInfo;
-import com.github.jnrwinfspteam.jnrwinfsp.result.ResultFileInfoAndContext;
-import com.github.jnrwinfspteam.jnrwinfsp.result.ResultVolumeInfo;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
+import com.github.jnrwinfspteam.jnrwinfsp.result.*;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
 import jnr.ffi.Pointer;
 
@@ -13,6 +13,7 @@ import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
 
 public class MainTest {
     public static void main(String[] args) throws MountException, IOException {
@@ -35,13 +36,12 @@ public class MainTest {
 
     public static class TestWinFspFS extends WinFspStubFS {
         @Override
-        public ResultVolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) {
+        public VolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) throws NTStatusException {
             System.out.println("=== GET VOLUME INFO");
             System.out.println(fileSystem);
             try {
                 FileStore fStore = Files.getFileStore(Paths.get("C:"));
-                return new ResultVolumeInfo(
-                        0,
+                return new VolumeInfo(
                         fStore.getTotalSpace(),
                         fStore.getUsableSpace(),
                         "TESTDRIVE"
@@ -49,17 +49,16 @@ public class MainTest {
                 );
             } catch (Exception e) {
                 e.printStackTrace();
-                return new ResultVolumeInfo(-1);
+                throw new NTStatusException(-1);
             }
         }
 
         @Override
-        public ResultVolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) {
+        public VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) throws NTStatusException {
             System.out.println("=== SET VOLUME LABEL " + volumeLabel);
             try {
                 FileStore fStore = Files.getFileStore(Paths.get("C:"));
-                return new ResultVolumeInfo(
-                        0,
+                return new VolumeInfo(
                         fStore.getTotalSpace(),
                         fStore.getUsableSpace(),
                         volumeLabel
@@ -67,42 +66,74 @@ public class MainTest {
                 );
             } catch (Exception e) {
                 e.printStackTrace();
-                return new ResultVolumeInfo(-1);
+                throw new NTStatusException(-1);
             }
         }
 
         @Override
-        public ResultFileInfoAndContext create(FSP_FILE_SYSTEM fileSystem,
-                                               String fileName,
-                                               int createOptions,
-                                               int grantedAccess,
-                                               int fileAttributes,
-                                               Pointer pSecurityDescriptor,
-                                               long allocationSize) {
+        public ResultSecurityAndAttributes getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) {
+            System.out.println("=== GET SECURITY BY NAME " + fileName);
+            return new ResultSecurityAndAttributes(0, null, 0, 0);
+        }
+
+        @Override
+        public FileInfo create(FSP_FILE_SYSTEM fileSystem,
+                               String fileName,
+                               Set<CreateOptions> createOptions,
+                               int grantedAccess,
+                               Set<FileAttributes> fileAttributes,
+                               Pointer pSecurityDescriptor,
+                               long allocationSize) {
 
             System.out.println("=== CREATE " + fileName);
-            return new ResultFileInfoAndContext(0, Pointer.newIntPointer(jnr.ffi.Runtime.getSystemRuntime(), 0));
+            return new FileInfo();
         }
 
         @Override
-        public ResultFileInfoAndContext open(FSP_FILE_SYSTEM fileSystem,
-                                             String fileName,
-                                             int createOptions,
-                                             int grantedAccess) {
+        public FileInfo open(FSP_FILE_SYSTEM fileSystem,
+                             String fileName,
+                             Set<CreateOptions> createOptions,
+                             int grantedAccess) {
 
             System.out.println("=== OPEN " + fileName);
-            return new ResultFileInfoAndContext(0, Pointer.newIntPointer(jnr.ffi.Runtime.getSystemRuntime(), 0));
+            return new FileInfo();
         }
 
         @Override
-        public ResultFileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                                        Pointer pFileContext,
-                                        int fileAttributes,
-                                        boolean replaceFileAttributes,
-                                        long allocationSize) {
+        public FileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
+                                  String fileName,
+                                  Set<FileAttributes> fileAttributes,
+                                  boolean replaceFileAttributes,
+                                  long allocationSize) {
 
-            System.out.println("=== OVERWRITE");
-            return new ResultFileInfo(0);
+            System.out.println("=== OVERWRITE " + fileName);
+            return new FileInfo();
+        }
+
+        @Override
+        public void close(FSP_FILE_SYSTEM fileSystem, String fileName) {
+            System.out.println("=== CLOSE " + fileName);
+        }
+
+        @Override
+        public long read(FSP_FILE_SYSTEM fileSystem,
+                         String fileName,
+                         Pointer pBuffer,
+                         long offset,
+                         long length) {
+            System.out.println("=== READ " + fileName);
+            return length;
+        }
+
+        @Override
+        public ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
+                                        String fileName,
+                                        String pattern,
+                                        String marker,
+                                        Pointer pBuffer,
+                                        long length) {
+            System.out.println("=== READ DIRECTORY " + fileName);
+            return new ResultRead(0, length);
         }
     }
 }

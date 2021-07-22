@@ -1,9 +1,16 @@
 package com.github.jnrwinfspteam.jnrwinfsp.lib;
 
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import jnr.ffi.Pointer;
 import jnr.ffi.annotations.Delegate;
+import jnr.ffi.provider.jffi.NativeClosureFactory;
 import jnr.ffi.types.u_int32_t;
 import jnr.ffi.types.u_int64_t;
+
+import java.util.EnumSet;
+import java.util.Set;
 
 public final class WinFspCallbacks {
 

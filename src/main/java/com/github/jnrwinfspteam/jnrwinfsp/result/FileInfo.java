@@ -1,29 +1,36 @@
 package com.github.jnrwinfspteam.jnrwinfsp.result;
 
-public class ResultFileInfo extends Result {
+import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
+import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 
-    private int fileAttributes;
+import java.util.EnumSet;
+import java.util.Set;
+
+public class FileInfo {
+
+    private final Set<FileAttributes> fileAttributes;
     private int reparseTag;
     private long allocationSize;
     private long fileSize;
-    private long creationTime;
-    private long lastAccessTime;
-    private long lastWriteTime;
-    private long changeTime;
+    private WinSysTime creationTime;
+    private WinSysTime lastAccessTime;
+    private WinSysTime lastWriteTime;
+    private WinSysTime changeTime;
     private long indexNumber;
     private final int hardLinks = 0; /* unimplemented: set to 0 */
     private int eaSize;
 
-    public ResultFileInfo(int ntStatus) {
-        super(ntStatus);
+    public FileInfo() {
+        this.fileAttributes = EnumSet.noneOf(FileAttributes.class);
+        WinSysTime now = WinSysTime.now();
+        this.creationTime = now;
+        this.lastAccessTime = now;
+        this.lastWriteTime = now;
+        this.changeTime = now;
     }
 
-    public final int getFileAttributes() {
+    public final Set<FileAttributes> getFileAttributes() {
         return fileAttributes;
-    }
-
-    public final void setFileAttributes(int fileAttributes) {
-        this.fileAttributes = fileAttributes;
     }
 
     public final int getReparseTag() {
@@ -50,35 +57,35 @@ public class ResultFileInfo extends Result {
         this.fileSize = fileSize;
     }
 
-    public final long getCreationTime() {
+    public final WinSysTime getCreationTime() {
         return creationTime;
     }
 
-    public final void setCreationTime(long creationTime) {
+    public final void setCreationTime(WinSysTime creationTime) {
         this.creationTime = creationTime;
     }
 
-    public final long getLastAccessTime() {
+    public final WinSysTime getLastAccessTime() {
         return lastAccessTime;
     }
 
-    public final void setLastAccessTime(long lastAccessTime) {
+    public final void setLastAccessTime(WinSysTime lastAccessTime) {
         this.lastAccessTime = lastAccessTime;
     }
 
-    public final long getLastWriteTime() {
+    public final WinSysTime getLastWriteTime() {
         return lastWriteTime;
     }
 
-    public final void setLastWriteTime(long lastWriteTime) {
+    public final void setLastWriteTime(WinSysTime lastWriteTime) {
         this.lastWriteTime = lastWriteTime;
     }
 
-    public final long getChangeTime() {
+    public final WinSysTime getChangeTime() {
         return changeTime;
     }
 
-    public final void setChangeTime(long changeTime) {
+    public final void setChangeTime(WinSysTime changeTime) {
         this.changeTime = changeTime;
     }
 

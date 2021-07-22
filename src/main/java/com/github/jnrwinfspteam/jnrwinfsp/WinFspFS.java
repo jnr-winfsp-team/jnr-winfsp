@@ -1,34 +1,30 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.result.*;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
+import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
+
+import java.util.Set;
 
 public interface WinFspFS extends Mountable {
     /**
      * Get volume information.
      *
      * @param fileSystem The file system on which this request is posted.
-     * @return result with:
-     * <ul>
-     *     <li>STATUS_SUCCESS(0) and (non-null) volume information</li>
-     *     <li>OR error code and null volume information</li>
-     * </ul>
      */
-    ResultVolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem);
+    VolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) throws NTStatusException;
 
     /**
      * Set volume label.
      *
      * @param fileSystem  The file system on which this request is posted.
      * @param volumeLabel The new label for the volume.
-     * @return result with:
-     * <ul>
-     *     <li>STATUS_SUCCESS(0) and (non-null) volume information</li>
-     *     <li>OR error code and null volume information</li>
-     * </ul>
      */
-    ResultVolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel);
+    VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) throws NTStatusException;
 
     /**
      * Get file or directory attributes and security descriptor given a file name.
@@ -69,20 +65,15 @@ public interface WinFspFS extends Mountable {
      *                            descriptor will always be in self-relative format. Its length can be retrieved using the
      *                            Windows GetSecurityDescriptorLength API. Will be NULL for named streams.
      * @param allocationSize      Allocation size for the newly created file.
-     * @return result with:
-     * <ul>
-     *     <li>STATUS_SUCCESS(0) and (non-null) file context and file information (includes file attributes, file times, etc.)</li>
-     *     <li>OR error code and null file context and null file information</li>
-     * </ul>
      */
-    ResultFileInfoAndContext create(FSP_FILE_SYSTEM fileSystem,
-                                    String fileName,
-                                    int createOptions,
-                                    int grantedAccess,
-                                    int fileAttributes,
-                                    Pointer pSecurityDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */,
-                                    long allocationSize
-    );
+    FileInfo create(FSP_FILE_SYSTEM fileSystem,
+                    String fileName,
+                    Set<CreateOptions> createOptions,
+                    int grantedAccess,
+                    Set<FileAttributes> fileAttributes,
+                    Pointer pSecurityDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */,
+                    long allocationSize)
+            throws NTStatusException;
 
     /**
      * Open a file or directory.
@@ -99,35 +90,26 @@ public interface WinFspFS extends Mountable {
      *                      need not perform any additional checks. However this parameter may be useful to a user
      *                      mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
      *                      which flags to use in its POSIX open() call.
-     * @return result with:
-     * <ul>
-     *     <li>STATUS_SUCCESS(0) and (non-null) file context and file information (includes file attributes, file times, etc.)</li>
-     *     <li>OR error code and null file context and null file information</li>
-     * </ul>
      */
-    ResultFileInfoAndContext open(FSP_FILE_SYSTEM fileSystem, String fileName, int createOptions, int grantedAccess);
+    FileInfo open(FSP_FILE_SYSTEM fileSystem, String fileName, Set<CreateOptions> createOptions, int grantedAccess)
+            throws NTStatusException;
 
     /**
      * Overwrite a file.
      *
      * @param fileSystem            The file system on which this request is posted.
-     * @param pFileContext          The file context of the file to overwrite.
+     * @param fileName              The name of the file or directory being overwritten
      * @param fileAttributes        File attributes to apply to the overwritten file.
      * @param replaceFileAttributes When TRUE the existing file attributes should be replaced with the new ones.
      *                              When FALSE the existing file attributes should be merged (or'ed) with the new ones.
      * @param allocationSize        Allocation size for the overwritten file.
-     * @return result with:
-     * <ul>
-     *    <li>STATUS_SUCCESS(0) and (non-null) file information (includes file attributes, file times, etc.)</li>
-     *    <li>OR error code and null file information</li>
-     * </ul>
      */
-    ResultFileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                             Pointer pFileContext,
-                             int fileAttributes,
-                             boolean replaceFileAttributes,
-                             long allocationSize
-    );
+    FileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
+                       String fileName,
+                       Set<FileAttributes> fileAttributes,
+                       boolean replaceFileAttributes,
+                       long allocationSize)
+            throws NTStatusException;
 
     /**
      * Cleanup a file.
@@ -174,104 +156,80 @@ public interface WinFspFS extends Mountable {
      * PostCleanupWhenModifiedOnly flag. In this case the FSD will only post Cleanup requests when
      * the file was modified/deleted.
      *
-     * @param fileSystem   The file system on which this request is posted.
-     * @param pFileContext The file context of the file or directory to cleanup.
-     * @param fileName     The name of the file or directory to cleanup. Sent only when a Delete is requested.
-     * @param flags        These flags determine whether the file was modified and whether to delete the file.
+     * @param fileSystem The file system on which this request is posted.
+     * @param fileName   The name of the file or directory to cleanup.
+     * @param flags      These flags determine whether the file was modified and whether to delete the file.
      */
-    void cleanup(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, String fileName, long flags);
+    void cleanup(FSP_FILE_SYSTEM fileSystem, String fileName, Set<CleanupFlags> flags);
 
     /**
      * Close a file.
      *
-     * @param fileSystem   The file system on which this request is posted.
-     * @param pFileContext The file context of the file or directory to be closed.
+     * @param fileSystem The file system on which this request is posted.
+     * @param fileName   The name of the file or directory to be closed.
      */
-    void close(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext);
+    void close(FSP_FILE_SYSTEM fileSystem, String fileName);
 
     /**
      * Read a file.
-     *
-     * @param fileSystem   The file system on which this request is posted.
-     * @param pFileContext The file context of the file to be read.
-     * @param pBuffer      Pointer to a buffer that will receive the results of the read operation.
-     * @param offset       Offset within the file to read from.
-     * @param length       Length of data to read.
-     * @return result with:
-     * <ul>
-     *     <li>STATUS_SUCCESS(0) and actual number of bytes read</li>
-     *     <li>OR STATUS_PENDING(0x103) and actual number of bytes read</li>
-     *     <li>OR error code</li>
-     * </ul>
      * <p>
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
+     *
+     * @param fileSystem The file system on which this request is posted.
+     * @param fileName   The name of the file to be read.
+     * @param pBuffer    Pointer to a buffer that will receive the results of the read operation.
+     * @param offset     Offset within the file to read from.
+     * @param length     Length of data to read.
      */
-    ResultRead read(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, Pointer pBuffer, long offset, long length);
+    long read(FSP_FILE_SYSTEM fileSystem, String fileName, Pointer pBuffer, long offset, long length)
+            throws NTStatusException;
 
     /**
      * Write a file.
+     * <p>
+     * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      *
      * @param fileSystem       The file system on which this request is posted.
-     * @param pFileContext     The file context of the file to be written.
+     * @param fileName         The name of the file to be written.
      * @param pBuffer          Pointer to a buffer that contains the data to write.
      * @param offset           Offset within the file to write to.
      * @param length           Length of data to write.
      * @param writeToEndOfFile When TRUE the file system must write to the current end of file. In this case the Offset
      *                         parameter will contain the value -1.
      * @param constrainedIo    When TRUE the file system must not extend the file (i.e. change the file size).
-     * @return result with:
-     * <ul>
-     *     <li>STATUS_SUCCESS(0) and actual number of bytes written and (non-null) file information (includes file attributes, file times, etc.)</li>
-     *     <li>OR STATUS_PENDING(0x103) and actual number of bytes written and (non-null) file information</li>
-     *     <li>OR error code and null file information</li>
-     * </ul>
-     * <p>
-     * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      */
-    ResultFileInfoWrite write(FSP_FILE_SYSTEM fileSystem,
-                              Pointer pFileContext,
-                              Pointer pBuffer,
-                              long offset,
-                              long length,
-                              boolean writeToEndOfFile,
-                              boolean constrainedIo
-    );
+    long write(FSP_FILE_SYSTEM fileSystem,
+               String fileName,
+               Pointer pBuffer,
+               long offset,
+               long length,
+               boolean writeToEndOfFile,
+               boolean constrainedIo
+    ) throws NTStatusException;
 
     /**
      * Flush a file or volume.
      * <p>
      * Note that the FSD will also flush all file/volume caches prior to invoking this operation.
      *
-     * @param fileSystem   The file system on which this request is posted.
-     * @param pFileContext The file context of the file to be flushed. When NULL the whole volume is being flushed.
-     * @return result with:
-     * <ul>
-     *    <li>STATUS_SUCCESS(0) and (non-null) file information (includes file attributes, file times, etc.) when
-     *    flushing file (not volume).</li>
-     *    <li>OR STATUS_SUCCESS(0) and null file information when flushing volume (not file).</li>
-     *    <li>OR error code and null file information</li>
-     * </ul>
+     * @param fileSystem The file system on which this request is posted.
+     * @param fileName   The name of the file to be flushed. When NULL the whole volume is being flushed.
      */
-    ResultFileInfo flush(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext);
+    void flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
 
     /**
      * Get file or directory information.
      *
-     * @param fileSystem   The file system on which this request is posted.
-     * @param pFileContext The file context of the file or directory to get information for.
-     * @return result with:
-     * <ul>
-     *    <li>STATUS_SUCCESS(0) and (non-null) file information (includes file attributes, file times, etc.)</li>
-     *    <li>OR error code and null file information</li>
-     * </ul>
+     * @param fileSystem The file system on which this request is posted.
+     * @param fileName   The name of the file or directory to get information for.
      */
-    ResultFileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext);
+    FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
 
     /**
      * Set file or directory basic information.
      *
      * @param fileSystem     The file system on which this request is posted.
-     * @param pFileContext   The file context of the file or directory to set information for.
+     * @param fileName       The name of the file or directory to set information for.
      * @param fileAttributes File attributes to apply to the file or directory. If the value INVALID_FILE_ATTRIBUTES
      *                       is sent, the file attributes should not be changed.
      * @param creationTime   Creation time to apply to the file or directory. If the value 0 is sent, the creation
@@ -282,20 +240,15 @@ public interface WinFspFS extends Mountable {
      *                       write time should not be changed.
      * @param changeTime     Change time to apply to the file or directory. If the value 0 is sent, the change time
      *                       should not be changed.
-     * @return result with:
-     * <ul>
-     *    <li>STATUS_SUCCESS(0) and (non-null) file information (includes file attributes, file times, etc.)</li>
-     *    <li>OR error code and null file information</li>
-     * </ul>
      */
-    ResultFileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
-                                Pointer pFileContext,
-                                int fileAttributes,
-                                long creationTime,
-                                long lastAccessTime,
-                                long lastWriteTime,
-                                long changeTime
-    );
+    FileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
+                          String fileName,
+                          Set<FileAttributes> fileAttributes,
+                          WinSysTime creationTime,
+                          WinSysTime lastAccessTime,
+                          WinSysTime lastWriteTime,
+                          WinSysTime changeTime
+    ) throws NTStatusException;
 
     /**
      * Set file/allocation size.
@@ -318,20 +271,12 @@ public interface WinFspFS extends Mountable {
      * </ul>
      *
      * @param fileSystem        The file system on which this request is posted.
-     * @param pFileContext      The file context of the file to set the file/allocation size for.
+     * @param fileName          The name of the file to set the file/allocation size for.
      * @param newSize           New file/allocation size to apply to the file.
      * @param setAllocationSize If TRUE, then the allocation size is being set. if FALSE, then the file size is being set.
-     * @return result with:
-     * <ul>
-     *    <li>STATUS_SUCCESS(0) and (non-null) file information (includes file attributes, file times, etc.)</li>
-     *    <li>OR error code and null file information</li>
-     * </ul>
      */
-    ResultFileInfo setFileSize(FSP_FILE_SYSTEM fileSystem,
-                               Pointer pFileContext,
-                               long newSize,
-                               boolean setAllocationSize
-    );
+    FileInfo setFileSize(FSP_FILE_SYSTEM fileSystem, String fileName, long newSize, boolean setAllocationSize)
+            throws NTStatusException;
 
     /**
      * Determine whether a file or directory can be deleted.
@@ -349,16 +294,10 @@ public interface WinFspFS extends Mountable {
      * NOTE: If both CanDelete and SetDelete are defined, SetDelete takes precedence. However
      * most file systems need only implement the CanDelete operation.
      *
-     * @param fileSystem   The file system on which this request is posted.
-     * @param pFileContext The file context of the file or directory to test for deletion.
-     * @param fileName     The name of the file or directory to test for deletion.
-     * @return result with:
-     * <ul>
-     *    <li>STATUS_SUCCESS(0)</li>
-     *    <li>OR error code</li>
-     * </ul>
+     * @param fileSystem The file system on which this request is posted.
+     * @param fileName   The name of the file or directory to test for deletion.
      */
-    Result canDelete(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, String fileName);
+    void canDelete(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
 
     /**
      * Renames a file or directory.
@@ -371,42 +310,32 @@ public interface WinFspFS extends Mountable {
      * </ul>
      *
      * @param fileSystem      The file system on which this request is posted.
-     * @param pFileContext    The file context of the file or directory to be renamed.
      * @param fileName        The current name of the file or directory to rename.
      * @param newFileName     The new name for the file or directory.
      * @param replaceIfExists Whether to replace a file that already exists at NewFileName.
-     * @return result with:
-     * <ul>
-     *    <li>STATUS_SUCCESS(0)</li>
-     *    <li>OR error code</li>
-     * </ul>
      */
-    Result rename(FSP_FILE_SYSTEM fileSystem,
-                  Pointer pFileContext,
-                  String fileName,
-                  String newFileName,
-                  boolean replaceIfExists
-    );
+    void rename(FSP_FILE_SYSTEM fileSystem, String fileName, String newFileName, boolean replaceIfExists)
+            throws NTStatusException;
 
     /**
      * Get file or directory security descriptor.
      *
-     * @param fileSystem   The file system on which this request is posted.
-     * @param pFileContext The file context of the file or directory to get the security descriptor for.
+     * @param fileSystem The file system on which this request is posted.
+     * @param fileName   The name of the file or directory to get the security descriptor for.
      * @return result with:
      * <ul>
      *     <li>STATUS_SUCCESS(0) and (non-null) security descriptor and size</li>
      *     <li>OR error code and null security descriptor and size</li>
      * </ul>
      */
-    ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext);
+    ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName);
 
     /**
      * Set file or directory security descriptor. See FspSetSecurityDescriptor or FspDeleteSecurityDescriptor
      * for more details.
      *
      * @param fileSystem              The file system on which this request is posted.
-     * @param pFileContext            The file context of the file or directory to set the security descriptor for.
+     * @param fileName                The name of the file or directory to set the security descriptor for.
      * @param securityInformation     Describes what parts of the file or directory security descriptor should
      *                                be modified.
      * @param pModificationDescriptor Describes the modifications to apply to the file or directory security descriptor.
@@ -417,7 +346,7 @@ public interface WinFspFS extends Mountable {
      * </ul>
      */
     Result setSecurity(FSP_FILE_SYSTEM fileSystem,
-                       Pointer pFileContext,
+                       String fileName,
                        int securityInformation,
                        Pointer pModificationDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */
     );
@@ -425,16 +354,16 @@ public interface WinFspFS extends Mountable {
     /**
      * Read a directory. See FspFileSystemAddDirInfo for more details.
      *
-     * @param fileSystem   The file system on which this request is posted.
-     * @param pFileContext The file context of the directory to be read.
-     * @param pattern      The pattern to match against files in this directory. Can be NULL. The file system
-     *                     can choose to ignore this parameter as the FSD will always perform its own pattern
-     *                     matching on the returned results.
-     * @param marker       A file name that marks where in the directory to start reading. Files with names
-     *                     that are greater than (not equal to) this marker (in the directory order determined
-     *                     by the file system) should be returned. Can be NULL.
-     * @param pBuffer      Pointer to a buffer that will receive the results of the read operation.
-     * @param length       Length of data to read.
+     * @param fileSystem The file system on which this request is posted.
+     * @param fileName   The name of the directory to be read.
+     * @param pattern    The pattern to match against files in this directory. Can be NULL. The file system
+     *                   can choose to ignore this parameter as the FSD will always perform its own pattern
+     *                   matching on the returned results.
+     * @param marker     A file name that marks where in the directory to start reading. Files with names
+     *                   that are greater than (not equal to) this marker (in the directory order determined
+     *                   by the file system) should be returned. Can be NULL.
+     * @param pBuffer    Pointer to a buffer that will receive the results of the read operation.
+     * @param length     Length of data to read.
      * @return result with:
      * <ul>
      *     <li>STATUS_SUCCESS(0) and actual number of bytes read</li>
@@ -445,7 +374,7 @@ public interface WinFspFS extends Mountable {
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      */
     ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
-                             Pointer pFileContext,
+                             String fileName,
                              String pattern,
                              String marker,
                              Pointer pBuffer,

@@ -1,8 +1,14 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.result.*;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
+import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
+
+import java.util.Set;
 
 /**
  * Extend this class and override only the operations you wish to implement. The remaining operations
@@ -12,13 +18,13 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public ResultVolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) {
+    public VolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) throws NTStatusException {
         return null;
     }
 
     @Override
     @NotImplemented
-    public ResultVolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) {
+    public VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) throws NTStatusException {
         return null;
     }
 
@@ -30,128 +36,127 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public ResultFileInfoAndContext create(FSP_FILE_SYSTEM fileSystem,
-                                           String fileName,
-                                           int createOptions,
-                                           int grantedAccess,
-                                           int fileAttributes,
-                                           Pointer pSecurityDescriptor,
-                                           long allocationSize) {
+    public FileInfo create(FSP_FILE_SYSTEM fileSystem,
+                           String fileName,
+                           Set<CreateOptions> createOptions,
+                           int grantedAccess,
+                           Set<FileAttributes> fileAttributes,
+                           Pointer pSecurityDescriptor,
+                           long allocationSize) throws NTStatusException {
         return null;
     }
 
     @Override
     @NotImplemented
-    public ResultFileInfoAndContext open(FSP_FILE_SYSTEM fileSystem,
-                                         String fileName,
-                                         int createOptions,
-                                         int grantedAccess) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
-    public ResultFileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                                    Pointer pFileContext,
-                                    int fileAttributes,
-                                    boolean replaceFileAttributes,
-                                    long allocationSize) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
-    public void cleanup(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, String fileName, long flags) {
-
-    }
-
-    @Override
-    @NotImplemented
-    public void close(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext) {
-
-    }
-
-    @Override
-    @NotImplemented
-    public ResultRead read(FSP_FILE_SYSTEM fileSystem,
-                           Pointer pFileContext,
-                           Pointer pBuffer,
-                           long offset,
-                           long length) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
-    public ResultFileInfoWrite write(FSP_FILE_SYSTEM fileSystem,
-                                     Pointer pFileContext,
-                                     Pointer pBuffer,
-                                     long offset,
-                                     long length,
-                                     boolean writeToEndOfFile,
-                                     boolean constrainedIo) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
-    public ResultFileInfo flush(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
-    public ResultFileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
-    public ResultFileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
-                                       Pointer pFileContext,
-                                       int fileAttributes,
-                                       long creationTime,
-                                       long lastAccessTime,
-                                       long lastWriteTime,
-                                       long changeTime) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
-    public ResultFileInfo setFileSize(FSP_FILE_SYSTEM fileSystem,
-                                      Pointer pFileContext,
-                                      long newSize,
-                                      boolean setAllocationSize) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
-    public Result canDelete(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext, String fileName) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
-    public Result rename(FSP_FILE_SYSTEM fileSystem,
-                         Pointer pFileContext,
+    public FileInfo open(FSP_FILE_SYSTEM fileSystem,
                          String fileName,
-                         String newFileName,
-                         boolean replaceIfExists) {
+                         Set<CreateOptions> createOptions,
+                         int grantedAccess) throws NTStatusException {
         return null;
     }
 
     @Override
     @NotImplemented
-    public ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, Pointer pFileContext) {
+    public FileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
+                              String fileName,
+                              Set<FileAttributes> fileAttributes,
+                              boolean replaceFileAttributes,
+                              long allocationSize) throws NTStatusException {
+        return null;
+    }
+
+    @Override
+    @NotImplemented
+    public void cleanup(FSP_FILE_SYSTEM fileSystem, String fileName, Set<CleanupFlags> flags) {
+
+    }
+
+    @Override
+    @NotImplemented
+    public void close(FSP_FILE_SYSTEM fileSystem, String fileName) {
+
+    }
+
+    @Override
+    @NotImplemented
+    public long read(FSP_FILE_SYSTEM fileSystem,
+                     String fileName,
+                     Pointer pBuffer,
+                     long offset,
+                     long length) throws NTStatusException {
+        return 0;
+    }
+
+    @Override
+    @NotImplemented
+    public long write(FSP_FILE_SYSTEM fileSystem,
+                      String fileName,
+                      Pointer pBuffer,
+                      long offset,
+                      long length,
+                      boolean writeToEndOfFile,
+                      boolean constrainedIo) throws NTStatusException {
+        return 0;
+    }
+
+    @Override
+    @NotImplemented
+    public void flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+
+    }
+
+    @Override
+    @NotImplemented
+    public FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+        return null;
+    }
+
+    @Override
+    @NotImplemented
+    public FileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
+                                 String fileName,
+                                 Set<FileAttributes> fileAttributes,
+                                 WinSysTime creationTime,
+                                 WinSysTime lastAccessTime,
+                                 WinSysTime lastWriteTime,
+                                 WinSysTime changeTime) throws NTStatusException {
+        return null;
+    }
+
+    @Override
+    @NotImplemented
+    public FileInfo setFileSize(FSP_FILE_SYSTEM fileSystem,
+                                String fileName,
+                                long newSize,
+                                boolean setAllocationSize) throws NTStatusException {
+        return null;
+    }
+
+    @Override
+    @NotImplemented
+    public void canDelete(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+
+    }
+
+    @Override
+    @NotImplemented
+    public void rename(FSP_FILE_SYSTEM fileSystem,
+                       String fileName,
+                       String newFileName,
+                       boolean replaceIfExists) throws NTStatusException {
+
+    }
+
+    @Override
+    @NotImplemented
+    public ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) {
         return null;
     }
 
     @Override
     @NotImplemented
     public Result setSecurity(FSP_FILE_SYSTEM fileSystem,
-                              Pointer pFileContext,
+                              String fileName,
                               int securityInformation,
                               Pointer pModificationDescriptor) {
         return null;
@@ -160,7 +165,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
-                                    Pointer pFileContext,
+                                    String fileName,
                                     String pattern,
                                     String marker,
                                     Pointer pBuffer,

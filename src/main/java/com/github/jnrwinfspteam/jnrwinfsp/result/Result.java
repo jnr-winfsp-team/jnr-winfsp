@@ -4,6 +4,10 @@ public class Result {
 
     private final int ntStatus;
 
+    public Result() {
+        this.ntStatus = 0;
+    }
+
     public Result(int ntStatus) {
         this.ntStatus = ntStatus;
     }

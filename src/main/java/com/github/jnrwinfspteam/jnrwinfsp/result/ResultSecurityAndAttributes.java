@@ -6,6 +6,12 @@ public class ResultSecurityAndAttributes extends ResultSecurity {
 
     private final int fileAttributesOrReparsePointIndex;
 
+    public ResultSecurityAndAttributes(Pointer securityDescriptor,
+                                       int securityDescriptorSize,
+                                       int fileAttributesOrReparsePointIndex) {
+        this(0, securityDescriptor, securityDescriptorSize, fileAttributesOrReparsePointIndex);
+    }
+
     public ResultSecurityAndAttributes(int ntStatus,
                                        Pointer securityDescriptor,
                                        int securityDescriptorSize,

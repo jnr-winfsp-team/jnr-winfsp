@@ -1,50 +1,56 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.lib.StringUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.result.*;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM_INTERFACE;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_FILE_INFO;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_VOLUME_INFO;
+import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.*;
+import jnr.ffi.Runtime;
 
 final class FSHelper {
     static void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.GetVolumeInfo.set((pFS, pVolumeInfo) -> {
-            ResultVolumeInfo res = winfsp.getVolumeInfo(fs(pFS));
-
-            if (res.getNtStatus() == 0) {
+            try {
+                VolumeInfo vi = winfsp.getVolumeInfo(fs(pFS));
                 FSP_FSCTL_VOLUME_INFO viOut = FSP_FSCTL_VOLUME_INFO.of(pVolumeInfo).get();
-                viOut.TotalSize.set(res.getTotalSize());
-                viOut.FreeSize.set(res.getFreeSize());
-                viOut.setVolumeLabel(res.getVolumeLabel());
-            }
+                viOut.TotalSize.set(vi.getTotalSize());
+                viOut.FreeSize.set(vi.getFreeSize());
+                viOut.setVolumeLabel(vi.getVolumeLabel());
 
-            return res.getNtStatus();
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
+            }
         });
     }
 
     static void initSetVolumeLabel(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.SetVolumeLabel.set((pFS, pVolumeLabel, pVolumeInfo) -> {
-            ResultVolumeInfo res = winfsp.setVolumeLabel(fs(pFS), getString(pVolumeLabel));
 
-            if (res.getNtStatus() == 0) {
+            try {
+                VolumeInfo vi = winfsp.setVolumeLabel(fs(pFS), StringUtils.fromPointer(pVolumeLabel));
+
                 FSP_FSCTL_VOLUME_INFO viOut = FSP_FSCTL_VOLUME_INFO.of(pVolumeInfo).get();
-                viOut.TotalSize.set(res.getTotalSize());
-                viOut.FreeSize.set(res.getFreeSize());
-                viOut.setVolumeLabel(res.getVolumeLabel());
-            }
+                viOut.TotalSize.set(vi.getTotalSize());
+                viOut.FreeSize.set(vi.getFreeSize());
+                viOut.setVolumeLabel(vi.getVolumeLabel());
 
-            return res.getNtStatus();
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
+            }
         });
     }
 
     static void initGetSecurityByName(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.GetSecurityByName.set((pFS, pFileName, pFileAttributes, pSecurityDescriptor, pSecurityDescriptorSize) -> {
-            ResultSecurityAndAttributes res = winfsp.getSecurityByName(fs(pFS), getString(pFileName));
+            ResultSecurityAndAttributes res = winfsp.getSecurityByName(fs(pFS), StringUtils.fromPointer(pFileName));
 
             if (res.getNtStatus() == 0 || res.getNtStatus() == 0x104) {
                 if (pFileAttributes != null)
@@ -75,182 +81,239 @@ final class FSHelper {
     static void initCreate(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Create.set((pFS, pFileName, createOptions, grantedAccess, fileAttributes,
                         pSecurityDescriptor, allocationSize, ppFileContext, pFileInfo) -> {
-            ResultFileInfoAndContext res = winfsp.create(
-                    fs(pFS),
-                    getString(pFileName),
-                    createOptions,
-                    grantedAccess,
-                    fileAttributes,
-                    pSecurityDescriptor,
-                    allocationSize
-            );
+            try {
+                String fileName = StringUtils.fromPointer(pFileName);
+                FileInfo fi = winfsp.create(
+                        fs(pFS),
+                        fileName,
+                        CreateOptions.setValueOf(createOptions),
+                        grantedAccess,
+                        FileAttributes.setValueOf(fileAttributes),
+                        pSecurityDescriptor,
+                        allocationSize
+                );
 
-            if (res.getNtStatus() == 0) {
-                putFileInfo(pFileInfo, res);
-                putFileContext(ppFileContext, res);
+                putFileInfo(pFileInfo, fi);
+                putFileContext(ppFileContext, fileName);
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
             }
-
-            return res.getNtStatus();
         });
     }
 
     static void initOpen(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Open.set((pFS, pFileName, createOptions, grantedAccess, ppFileContext, pFileInfo) -> {
-            ResultFileInfoAndContext res = winfsp.open(fs(pFS), getString(pFileName), createOptions, grantedAccess);
+            try {
+                String fileName = StringUtils.fromPointer(pFileName);
+                FileInfo fi = winfsp.open(
+                        fs(pFS),
+                        fileName,
+                        CreateOptions.setValueOf(createOptions),
+                        grantedAccess
+                );
 
-            if (res.getNtStatus() == 0) {
-                putFileInfo(pFileInfo, res);
-                putFileContext(ppFileContext, res);
+                putFileInfo(pFileInfo, fi);
+                putFileContext(ppFileContext, fileName);
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
             }
-
-            return res.getNtStatus();
         });
     }
 
     static void initOverwrite(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Overwrite.set((pFS, pFileContext, fileAttributes, replaceFileAttributes, allocationSize, pFileInfo) -> {
-            ResultFileInfo res = winfsp.overwrite(
-                    fs(pFS),
-                    pFileContext,
-                    fileAttributes,
-                    replaceFileAttributes,
-                    allocationSize
-            );
+            try {
+                String fileName = StringUtils.fromPointer(pFileContext);
+                FileInfo fi = winfsp.overwrite(
+                        fs(pFS),
+                        fileName,
+                        FileAttributes.setValueOf(fileAttributes),
+                        replaceFileAttributes,
+                        allocationSize
+                );
 
-            if (res.getNtStatus() == 0) {
-                putFileInfo(pFileInfo, res);
+                putFileInfo(pFileInfo, fi);
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
             }
-
-            return res.getNtStatus();
         });
     }
 
     static void initCleanup(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
-        fsi.Cleanup.set((pFS, pFileContext, pFileName, flags) -> {
-            winfsp.cleanup(fs(pFS), pFileContext, getString(pFileName), flags);
+        fsi.Cleanup.set((pFS, _pFileContext, pFileName, flags) -> {
+            String fileName = StringUtils.fromPointer(pFileName);
+            winfsp.cleanup(
+                    fs(pFS),
+                    fileName,
+                    CleanupFlags.setValueOf(Math.toIntExact(flags))
+            );
         });
     }
 
     static void initClose(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Close.set((pFS, pFileContext) -> {
-            winfsp.close(fs(pFS), pFileContext);
+            String fileName = StringUtils.fromPointer(pFileContext);
+            winfsp.close(fs(pFS), fileName);
         });
     }
 
     static void initRead(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Read.set((pFS, pFileContext, pBuffer, offset, length, pBytesTransferred) -> {
-            ResultRead res = winfsp.read(fs(pFS), pFileContext, pBuffer, offset, length);
+            try {
+                String fileName = StringUtils.fromPointer(pFileContext);
+                long bytesTransferred = winfsp.read(fs(pFS), fileName, pBuffer, offset, length);
 
-            if (res.getNtStatus() == 0 || res.getNtStatus() == 0x103) {
-                pBytesTransferred.putLong(0, res.getBytesTransferred());
+                pBytesTransferred.putLong(0, bytesTransferred);
+
+                return 0;
+            } catch (NTStatusException e) {
+                // TODO handle STATUS_PENDING(0x103) for async operations
+                return e.getNtStatus();
             }
-
-            return res.getNtStatus();
         });
     }
 
     static void initWrite(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Write.set((pFS, pFileContext, pBuffer, offset, length, writeToEndOfFile, constrainedIo,
                        pBytesTransferred, pFileInfo) -> {
-            ResultFileInfoWrite res = winfsp.write(
-                    fs(pFS),
-                    pFileContext,
-                    pBuffer,
-                    offset,
-                    length,
-                    writeToEndOfFile,
-                    constrainedIo
-            );
+            try {
+                FSP_FILE_SYSTEM fs = fs(pFS);
+                String fileName = StringUtils.fromPointer(pFileContext);
+                long bytesTransferred = winfsp.write(
+                        fs,
+                        fileName,
+                        pBuffer,
+                        offset,
+                        length,
+                        writeToEndOfFile,
+                        constrainedIo
+                );
+                FileInfo fi = winfsp.getFileInfo(fs, fileName);
 
-            if (res.getNtStatus() == 0 || res.getNtStatus() == 0x103) {
-                pBytesTransferred.putLong(0, res.getBytesTransferred());
-                putFileInfo(pFileInfo, res);
+                pBytesTransferred.putLong(0, bytesTransferred);
+                putFileInfo(pFileInfo, fi);
+
+                return 0;
+            } catch (NTStatusException e) {
+                // TODO handle STATUS_PENDING(0x103) for async operations
+                return e.getNtStatus();
             }
-
-            return res.getNtStatus();
         });
     }
 
     static void initFlush(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Flush.set((pFS, pFileContext, pFileInfo) -> {
-            ResultFileInfo res = winfsp.flush(fs(pFS), pFileContext);
+            try {
+                FSP_FILE_SYSTEM fs = fs(pFS);
+                String fileName = StringUtils.fromPointer(pFileContext);
+                winfsp.flush(fs, fileName);
 
-            if (res.getNtStatus() == 0) {
-                putFileInfo(pFileInfo, res);
+                if (fileName != null) {
+                    FileInfo fi = winfsp.getFileInfo(fs, fileName);
+                    putFileInfo(pFileInfo, fi);
+                }
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
             }
-
-            return res.getNtStatus();
         });
     }
 
     static void initGetFileInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.GetFileInfo.set((pFS, pFileContext, pFileInfo) -> {
-            ResultFileInfo res = winfsp.getFileInfo(fs(pFS), pFileContext);
+            try {
+                String fileName = StringUtils.fromPointer(pFileContext);
+                FileInfo fi = winfsp.getFileInfo(fs(pFS), fileName);
 
-            if (res.getNtStatus() == 0) {
-                putFileInfo(pFileInfo, res);
+                putFileInfo(pFileInfo, fi);
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
             }
-
-            return res.getNtStatus();
         });
     }
 
     static void initSetBasicInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.SetBasicInfo.set((pFS, pFileContext, fileAttributes, creationTime, lastAccessTime, lastWriteTime, changeTime,
                               pFileInfo) -> {
-            ResultFileInfo res = winfsp.setBasicInfo(
-                    fs(pFS),
-                    pFileContext,
-                    fileAttributes,
-                    creationTime,
-                    lastAccessTime,
-                    lastWriteTime,
-                    changeTime
-            );
+            try {
+                String fileName = StringUtils.fromPointer(pFileContext);
+                FileInfo fi = winfsp.setBasicInfo(
+                        fs(pFS),
+                        fileName,
+                        FileAttributes.setValueOf(fileAttributes),
+                        new WinSysTime(creationTime),
+                        new WinSysTime(lastAccessTime),
+                        new WinSysTime(lastWriteTime),
+                        new WinSysTime(changeTime)
+                );
 
-            if (res.getNtStatus() == 0) {
-                putFileInfo(pFileInfo, res);
+                putFileInfo(pFileInfo, fi);
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
             }
-
-            return res.getNtStatus();
         });
     }
 
     static void initSetFileSize(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.SetFileSize.set((pFS, pFileContext, newSize, setAllocationSize, pFileInfo) -> {
-            ResultFileInfo res = winfsp.setFileSize(fs(pFS), pFileContext, newSize, setAllocationSize);
+            try {
+                String fileName = StringUtils.fromPointer(pFileContext);
+                FileInfo res = winfsp.setFileSize(fs(pFS), fileName, newSize, setAllocationSize);
 
-            if (res.getNtStatus() == 0) {
                 putFileInfo(pFileInfo, res);
-            }
 
-            return res.getNtStatus();
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
+            }
         });
     }
 
     static void initCanDelete(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
-        fsi.CanDelete.set((pFS, pFileContext, pFileName) -> {
-            Result res = winfsp.canDelete(fs(pFS), pFileContext, getString(pFileName));
-            return res.getNtStatus();
+        fsi.CanDelete.set((pFS, _pFileContext, pFileName) -> {
+            try {
+                String fileName = StringUtils.fromPointer(pFileName);
+                winfsp.canDelete(fs(pFS), fileName);
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
+            }
         });
     }
 
     static void initRename(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
-        fsi.Rename.set((pFS, pFileContext, pFileName, pNewFileName, replaceIfExists) -> {
-            Result res = winfsp.rename(
-                    fs(pFS),
-                    pFileContext,
-                    getString(pFileName),
-                    getString(pNewFileName),
-                    replaceIfExists
-            );
-            return res.getNtStatus();
+        fsi.Rename.set((pFS, _pFileContext, pFileName, pNewFileName, replaceIfExists) -> {
+            try {
+                winfsp.rename(
+                        fs(pFS),
+                        StringUtils.fromPointer(pFileName),
+                        StringUtils.fromPointer(pNewFileName),
+                        replaceIfExists
+                );
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
+            }
         });
     }
 
     static void initGetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.GetSecurity.set((pFS, pFileContext, pSecurityDescriptor, pSecurityDescriptorSize) -> {
-            ResultSecurity res = winfsp.getSecurity(fs(pFS), pFileContext);
+            String fileName = StringUtils.fromPointer(pFileContext);
+            ResultSecurity res = winfsp.getSecurity(fs(pFS), fileName);
 
             if (res.getNtStatus() == 0) {
                 // Get file security
@@ -277,7 +340,8 @@ final class FSHelper {
 
     static void initSetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.SetSecurity.set((pFS, pFileContext, securityInformation, pModificationDescriptor) -> {
-            Result res = winfsp.setSecurity(fs(pFS), pFileContext, securityInformation, pModificationDescriptor);
+            String fileName = StringUtils.fromPointer(pFileContext);
+            Result res = winfsp.setSecurity(fs(pFS), fileName, securityInformation, pModificationDescriptor);
             return res.getNtStatus();
         });
     }
@@ -286,9 +350,9 @@ final class FSHelper {
         fsi.ReadDirectory.set((pFS, pFileContext, pPattern, pMarker, pBuffer, length, pBytesTransferred) -> {
             ResultRead res = winfsp.readDirectory(
                     fs(pFS),
-                    pFileContext,
-                    getString(pPattern),
-                    getString(pMarker),
+                    StringUtils.fromPointer(pFileContext),
+                    StringUtils.fromPointer(pPattern),
+                    StringUtils.fromPointer(pMarker),
                     pBuffer,
                     length
             );
@@ -305,63 +369,23 @@ final class FSHelper {
         return FSP_FILE_SYSTEM.of(pFS).get();
     }
 
-    private static void putFileInfo(Pointer pFileInfo, ResultFileInfo res) {
-        FSP_FSCTL_FILE_INFO fi = FSP_FSCTL_FILE_INFO.of(pFileInfo).get();
-        fi.FileAttributes.set(res.getFileAttributes());
-        fi.ReparseTag.set(res.getReparseTag());
-        fi.AllocationSize.set(res.getAllocationSize());
-        fi.FileSize.set(res.getFileSize());
-        fi.CreationTime.set(res.getCreationTime());
-        fi.LastAccessTime.set(res.getLastAccessTime());
-        fi.LastWriteTime.set(res.getLastWriteTime());
-        fi.ChangeTime.set(res.getChangeTime());
-        fi.IndexNumber.set(res.getIndexNumber());
-        fi.HardLinks.set(res.getHardLinks());
-        fi.EaSize.set(res.getEaSize());
+    private static void putFileInfo(Pointer pFI, FileInfo fi) {
+        FSP_FSCTL_FILE_INFO fiOut = FSP_FSCTL_FILE_INFO.of(pFI).get();
+        fiOut.FileAttributes.set(FileAttributes.intValueOf(fi.getFileAttributes()));
+        fiOut.ReparseTag.set(fi.getReparseTag());
+        fiOut.AllocationSize.set(fi.getAllocationSize());
+        fiOut.FileSize.set(fi.getFileSize());
+        fiOut.CreationTime.set(fi.getCreationTime().get());
+        fiOut.LastAccessTime.set(fi.getLastAccessTime().get());
+        fiOut.LastWriteTime.set(fi.getLastWriteTime().get());
+        fiOut.ChangeTime.set(fi.getChangeTime().get());
+        fiOut.IndexNumber.set(fi.getIndexNumber());
+        fiOut.HardLinks.set(fi.getHardLinks());
+        fiOut.EaSize.set(fi.getEaSize());
     }
 
-    private static void putFileContext(Pointer ppFileContext, ResultFileInfoAndContext res) {
-        ppFileContext.putPointer(0, res.getpFileContext());
-    }
-
-    /**
-     * Reads a null-terminated string using the configured charset for decoding the bytes.
-     * <p>
-     * This code is adapted from jnr.ffi.provider.converters.StringResultConverter but with a
-     * small fix to handle the case where a null terminator character is shorter than the
-     * configured terminator length (2 in the case of UTF-16{LE|BE})
-     *
-     * @param pStr A pointer to a string
-     * @return a string (null if the pointer is null)
-     */
-    private static String getString(Pointer pStr) {
-        if (pStr == null) {
-            return null;
-        }
-
-        Search:
-        for (int idx = 0; ; ) {
-            idx += pStr.indexOf(idx, (byte) 0);
-            for (int tcount = 1; tcount < StringUtils.CS_BYTES_PER_CHAR; tcount++) {
-                byte b = pStr.getByte(idx + tcount);
-                if (b != 0) {
-                    idx += tcount;
-                    continue Search;
-                }
-            }
-
-            // Small fix here to accommodate enough bytes for the string.
-            // NOTE: this WILL NOT make the string include a null character
-            while (idx % StringUtils.CS_BYTES_PER_CHAR != 0)
-                idx++;
-
-            byte[] bytes = new byte[idx];
-            pStr.get(0, bytes, 0, bytes.length);
-            try {
-                return StringUtils.getDecoder().reset().decode(ByteBuffer.wrap(bytes)).toString();
-            } catch (CharacterCodingException cce) {
-                throw new RuntimeException(cce);
-            }
-        }
+    private static void putFileContext(Pointer ppFileContext, String fileName) {
+        Pointer p = StringUtils.toPointer(Runtime.getSystemRuntime(), fileName);
+        ppFileContext.putPointer(0, p);
     }
 }

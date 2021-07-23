@@ -13,6 +13,8 @@ import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 
+import java.util.EnumSet;
+
 final class FSHelper {
     static void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.GetVolumeInfo.set((pFS, pVolumeInfo) -> {
@@ -146,13 +148,17 @@ final class FSHelper {
     }
 
     static void initCleanup(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
-        fsi.Cleanup.set((pFS, _pFileContext, pFileName, flags) -> {
+        fsi.Cleanup.set((pFS, pFileContext, pFileName, flags) -> {
             String fileName = StringUtils.fromPointer(pFileName);
+            EnumSet<CleanupFlags> cleanupFlags = CleanupFlags.setValueOf(Math.toIntExact(flags));
             winfsp.cleanup(
                     fs(pFS),
                     fileName,
-                    CleanupFlags.setValueOf(Math.toIntExact(flags))
+                    cleanupFlags
             );
+
+            if (cleanupFlags.contains(CleanupFlags.DELETE))
+                StringUtils.freeStringPointer(pFileContext);
         });
     }
 
@@ -160,6 +166,7 @@ final class FSHelper {
         fsi.Close.set((pFS, pFileContext) -> {
             String fileName = StringUtils.fromPointer(pFileContext);
             winfsp.close(fs(pFS), fileName);
+            StringUtils.freeStringPointer(pFileContext);
         });
     }
 

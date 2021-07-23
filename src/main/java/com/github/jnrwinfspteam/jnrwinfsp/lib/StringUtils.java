@@ -1,5 +1,6 @@
 package com.github.jnrwinfspteam.jnrwinfsp.lib;
 
+import com.kenai.jffi.MemoryIO;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 
@@ -53,12 +54,19 @@ public class StringUtils {
 
         try {
             byte[] bytes = getEncoder().reset().encode(CharBuffer.wrap(s)).array();
-            Pointer p = runtime.getMemoryManager().allocateDirect(bytes.length);
+
+            long address = MemoryIO.getInstance().allocateMemory(bytes.length + 1, true);
+            Pointer p = Pointer.wrap(runtime, address,bytes.length + 1);
             p.put(0, bytes, 0, bytes.length);
+            p.putByte(bytes.length, (byte) 0);
             return p;
         } catch (CharacterCodingException cce) {
             throw new RuntimeException(cce);
         }
+    }
+
+    public static void freeStringPointer(Pointer pStr) {
+        MemoryIO.getInstance().freeMemory(pStr.address());
     }
 
     /**

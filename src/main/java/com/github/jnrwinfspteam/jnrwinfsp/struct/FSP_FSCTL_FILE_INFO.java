@@ -44,7 +44,7 @@ public class FSP_FSCTL_FILE_INFO extends Struct {
         return fiP;
     }
 
-    private FSP_FSCTL_FILE_INFO(Runtime runtime) {
+    FSP_FSCTL_FILE_INFO(Runtime runtime) {
         super(runtime);
     }
 }

@@ -6,7 +6,6 @@ import com.github.jnrwinfspteam.jnrwinfsp.WinFspStubFS;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.result.FileInfo;
-import com.github.jnrwinfspteam.jnrwinfsp.result.ResultRead;
 import com.github.jnrwinfspteam.jnrwinfsp.result.VolumeInfo;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
 import jnr.ffi.Pointer;
@@ -16,9 +15,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A simple in-memory file system.
@@ -47,12 +45,16 @@ public class WinFspMemFS extends WinFspStubFS {
     private static final long MAX_FILE_NODES = 1024;
     private static final long MAX_FILE_SIZE = 16 * 1024 * 1024;
 
-    private final Map<String, MemoryObj> entries;
+    private final Path rootPath;
     private String volumeLabel;
+    private final Map<String, MemoryObj> objects;
 
     public WinFspMemFS() {
-        this.entries = new HashMap<>();
-        this.entries.put("\\", new DirObj(Path.of("\\"), SECURITY_DESCRIPTOR));
+        this.rootPath = Path.of("\\").normalize();
+        this.objects = new HashMap<>();
+        this.objects.put(rootPath.toString(), new DirObj(rootPath, SECURITY_DESCRIPTOR));
+//      this.objects.put("\\TestDir", new DirObj(Path.of("\\TestDir").normalize(), SECURITY_DESCRIPTOR));
+//      this.objects.put("\\TestFile", new FileObj(Path.of("\\TestFile").normalize(), SECURITY_DESCRIPTOR));
         this.volumeLabel = "MemFS";
     }
 
@@ -84,28 +86,26 @@ public class WinFspMemFS extends WinFspStubFS {
                            long allocationSize) throws NTStatusException {
 
         System.out.println("=== CREATE " + fileName);
-        synchronized (entries) {
-            Path filePath = Path.of(fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
 
             // Ensure the parent object exists and is a directory
-            MemoryObj parentObj = getObject(filePath.getParent());
-            if (parentObj instanceof FileObj)
-                throw new NTStatusException(0xC0000103); // STATUS_NOT_A_DIRECTORY
+            getDirObject(filePath.getParent());
 
             // Check for duplicate file/folder
-            if (entries.containsKey(filePath.toString()))
+            if (hasObject(filePath))
                 throw new NTStatusException(0xC0000035); // STATUS_OBJECT_NAME_COLLISION
 
             MemoryObj obj;
             if (createOptions.contains(CreateOptions.FILE_DIRECTORY_FILE))
                 obj = new DirObj(filePath, SECURITY_DESCRIPTOR);
             else {
-                var fileObj = new FileObj(filePath, SECURITY_DESCRIPTOR);
-                fileObj.setAllocationSize(Math.toIntExact(allocationSize));
-                obj = fileObj;
+                var file = new FileObj(filePath, SECURITY_DESCRIPTOR);
+                file.setAllocationSize(Math.toIntExact(allocationSize));
+                obj = file;
             }
 
-            entries.put(filePath.toString(), obj);
+            objects.put(filePath.toString(), obj);
 
             return obj.generateFileInfo();
         }
@@ -118,8 +118,8 @@ public class WinFspMemFS extends WinFspStubFS {
                          int grantedAccess) throws NTStatusException {
 
         System.out.println("=== OPEN " + fileName);
-        synchronized (entries) {
-            Path filePath = Path.of(fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
             MemoryObj obj = getObject(filePath);
 
             return obj.generateFileInfo();
@@ -134,18 +134,18 @@ public class WinFspMemFS extends WinFspStubFS {
                               long allocationSize) throws NTStatusException {
 
         System.out.println("=== OVERWRITE " + fileName);
-        synchronized (entries) {
-            Path filePath = Path.of(fileName);
-            FileObj fileObj = getFileObject(filePath);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            FileObj file = getFileObject(filePath);
 
             fileAttributes.add(FileAttributes.FILE_ATTRIBUTE_ARCHIVE);
             if (replaceFileAttributes)
-                fileObj.getFileAttributes().clear();
-            fileObj.getFileAttributes().addAll(fileAttributes);
+                file.getFileAttributes().clear();
+            file.getFileAttributes().addAll(fileAttributes);
 
-            fileObj.setAllocationSize(Math.toIntExact(allocationSize));
+            file.setAllocationSize(Math.toIntExact(allocationSize));
 
-            return fileObj.generateFileInfo();
+            return file.generateFileInfo();
         }
     }
 
@@ -162,19 +162,19 @@ public class WinFspMemFS extends WinFspStubFS {
                      long length) throws NTStatusException {
 
         System.out.println("=== READ " + fileName);
-        synchronized (entries) {
-            Path filePath = Path.of(fileName);
-            FileObj fileObj = getFileObject(filePath);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            FileObj file = getFileObject(filePath);
 
-            return fileObj.read(pBuffer, Math.toIntExact(offset), Math.toIntExact(length));
+            return file.read(pBuffer, Math.toIntExact(offset), Math.toIntExact(length));
         }
     }
 
     @Override
     public FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
         System.out.println("=== GET FILE INFO " + fileName);
-        synchronized (entries) {
-            Path filePath = Path.of(fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
             MemoryObj obj = getObject(filePath);
 
             return obj.generateFileInfo();
@@ -182,18 +182,56 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
-                                    String fileName,
-                                    String pattern,
-                                    String marker,
-                                    Pointer pBuffer,
-                                    long length) {
+    public List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem, String fileName, String pattern, String marker)
+            throws NTStatusException {
+
         System.out.println("=== READ DIRECTORY " + fileName);
-        return new ResultRead(0);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            DirObj dir = getDirObject(filePath);
+            var entries = new ArrayList<FileInfo>();
+
+            // only add the "." and ".." entries if the directory is not root
+            if (!dir.getPath().equals(rootPath)) {
+                DirObj parentDir = getDirObject(filePath.getParent());
+                entries.add(dir.generateFileInfo("."));
+                entries.add(parentDir.generateFileInfo(".."));
+            }
+
+            // include only direct children with relativised names
+            for (var obj : objects.values()) {
+                Path parent = obj.getPath().getParent();
+                if (parent != null
+                        && parent.equals(dir.getPath())
+                        && !obj.getPath().equals(dir.getPath())) {
+                    entries.add(obj.generateFileInfo(obj.getName()));
+                }
+            }
+
+            // sort the entries by file name
+            entries.sort(Comparator.comparing(FileInfo::getFileName));
+
+            // filter out all results before the marker, if it's set
+            if (marker != null) {
+                return entries.stream()
+                        .dropWhile(e -> e.getFileName().compareTo(marker) <= 0)
+                        .collect(Collectors.toList());
+            }
+
+            return entries;
+        }
+    }
+
+    private Path getPath(String filePath) {
+        return Path.of(filePath).normalize();
+    }
+
+    private boolean hasObject(Path filePath) {
+        return objects.containsKey(String.valueOf(filePath));
     }
 
     private MemoryObj getObject(Path filePath) throws NTStatusException {
-        MemoryObj obj = entries.get(filePath.toString());
+        MemoryObj obj = objects.get(String.valueOf(filePath));
         if (obj == null)
             throw new NTStatusException(0xC0000034); // STATUS_OBJECT_NAME_NOT_FOUND
 
@@ -208,10 +246,18 @@ public class WinFspMemFS extends WinFspStubFS {
         return (FileObj) obj;
     }
 
+    private DirObj getDirObject(Path filePath) throws NTStatusException {
+        MemoryObj obj = getObject(filePath);
+        if (!(obj instanceof DirObj))
+            throw new NTStatusException(0xC0000103); // STATUS_NOT_A_DIRECTORY
+
+        return (DirObj) obj;
+    }
+
     private VolumeInfo generateVolumeInfo() {
         return new VolumeInfo(
                 MAX_FILE_NODES * MAX_FILE_SIZE,
-                (MAX_FILE_NODES - entries.size()) * MAX_FILE_SIZE,
+                (MAX_FILE_NODES - objects.size()) * MAX_FILE_SIZE,
                 this.volumeLabel
         );
     }

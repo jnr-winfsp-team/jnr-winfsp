@@ -115,4 +115,29 @@ public interface LibWinFsp {
             Pointer /* FSP_FILE_SYSTEM */ fileSystem,
             @u_int32_t int debugLog
     );
+
+    /**
+     * Add directory information to a buffer.
+     * <p>
+     * This is a helper for implementing the ReadDirectory operation.
+     *
+     * @param dirInfo           The directory information to add. A value of NULL acts as an EOF marker for a ReadDirectory
+     *                          operation.
+     * @param buffer            Pointer to a buffer that will receive the results of the read operation. This should contain
+     *                          the same value passed to the ReadDirectory Buffer parameter.
+     * @param length            Length of data to read. This should contain the same value passed to the ReadDirectory
+     *                          Length parameter.
+     * @param pBytesTransferred [out]
+     *                          Pointer to a memory location that will receive the actual number of bytes read. This should
+     *                          contain the same value passed to the ReadDirectory PBytesTransferred parameter.
+     *                          FspFileSystemAddDirInfo uses the value pointed by this parameter to track how much of the
+     *                          buffer has been used so far.
+     * @return TRUE if the directory information was added, FALSE if there was not enough space to add it.
+     */
+    boolean FspFileSystemAddDirInfo(
+            Pointer /* FSP_FSCTL_DIR_INFO */ dirInfo,
+            Pointer /* VOID */ buffer,
+            long length,
+            Pointer /* ULONG */ pBytesTransferred
+    );
 }

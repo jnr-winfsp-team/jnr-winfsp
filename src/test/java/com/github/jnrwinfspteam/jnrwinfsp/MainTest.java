@@ -13,6 +13,7 @@ import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Set;
 
 public class MainTest {
@@ -86,7 +87,7 @@ public class MainTest {
                                long allocationSize) {
 
             System.out.println("=== CREATE " + fileName);
-            return new FileInfo();
+            return new FileInfo(fileName);
         }
 
         @Override
@@ -96,7 +97,7 @@ public class MainTest {
                              int grantedAccess) {
 
             System.out.println("=== OPEN " + fileName);
-            return new FileInfo();
+            return new FileInfo(fileName);
         }
 
         @Override
@@ -107,7 +108,7 @@ public class MainTest {
                                   long allocationSize) {
 
             System.out.println("=== OVERWRITE " + fileName);
-            return new FileInfo();
+            return new FileInfo(fileName);
         }
 
         @Override
@@ -126,14 +127,12 @@ public class MainTest {
         }
 
         @Override
-        public ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
-                                        String fileName,
-                                        String pattern,
-                                        String marker,
-                                        Pointer pBuffer,
-                                        long length) {
+        public List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem,
+                                            String fileName,
+                                            String pattern,
+                                            String marker) {
             System.out.println("=== READ DIRECTORY " + fileName);
-            return new ResultRead(0, length);
+            return List.of();
         }
     }
 }

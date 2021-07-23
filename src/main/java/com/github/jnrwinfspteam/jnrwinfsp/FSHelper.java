@@ -3,17 +3,20 @@ package com.github.jnrwinfspteam.jnrwinfsp;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
+import com.github.jnrwinfspteam.jnrwinfsp.lib.LibWinFsp;
 import com.github.jnrwinfspteam.jnrwinfsp.lib.StringUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.result.*;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM_INTERFACE;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_FILE_INFO;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_VOLUME_INFO;
+import com.github.jnrwinfspteam.jnrwinfsp.struct.*;
+import com.github.jnrwinfspteam.jnrwinfsp.util.Pointered;
 import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
+import jnr.ffi.Struct;
 
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.util.EnumSet;
+import java.util.List;
 
 final class FSHelper {
     static void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
@@ -353,22 +356,55 @@ final class FSHelper {
         });
     }
 
-    static void initReadDirectory(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    static void initReadDirectory(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp, LibWinFsp libWinFsp) {
         fsi.ReadDirectory.set((pFS, pFileContext, pPattern, pMarker, pBuffer, length, pBytesTransferred) -> {
-            ResultRead res = winfsp.readDirectory(
-                    fs(pFS),
-                    StringUtils.fromPointer(pFileContext),
-                    StringUtils.fromPointer(pPattern),
-                    StringUtils.fromPointer(pMarker),
-                    pBuffer,
-                    length
-            );
+            try {
+                List<FileInfo> fileInfos = winfsp.readDirectory(
+                        fs(pFS),
+                        StringUtils.fromPointer(pFileContext),
+                        StringUtils.fromPointer(pPattern),
+                        StringUtils.fromPointer(pMarker)
+                );
 
-            if (res.getNtStatus() == 0 || res.getNtStatus() == 0x103) {
-                pBytesTransferred.putLong(0, res.getBytesTransferred());
+                for (var fi : fileInfos) {
+                    String fileName = fi.getFileName();
+                    byte[] fileNameBytes = StringUtils.getEncoder().reset().encode(CharBuffer.wrap(fileName)).array();
+
+                    Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
+                    FSP_FSCTL_DIR_INFO di = diP.get();
+                    di.Size.set(Struct.size(di) + fileNameBytes.length);
+                    di.FileInfo.FileAttributes.set(FileAttributes.intValueOf(fi.getFileAttributes()));
+                    di.FileInfo.ReparseTag.set(fi.getReparseTag());
+                    di.FileInfo.AllocationSize.set(fi.getAllocationSize());
+                    di.FileInfo.FileSize.set(fi.getFileSize());
+                    di.FileInfo.CreationTime.set(fi.getCreationTime().get());
+                    di.FileInfo.LastAccessTime.set(fi.getLastAccessTime().get());
+                    di.FileInfo.LastWriteTime.set(fi.getLastWriteTime().get());
+                    di.FileInfo.ChangeTime.set(fi.getChangeTime().get());
+                    di.FileInfo.IndexNumber.set(fi.getIndexNumber());
+                    di.FileInfo.HardLinks.set(fi.getHardLinks());
+                    di.FileInfo.EaSize.set(fi.getEaSize());
+                    di.setFileName(fileNameBytes);
+
+                    boolean added = libWinFsp.FspFileSystemAddDirInfo(
+                            diP.getPointer(),
+                            pBuffer,
+                            length,
+                            pBytesTransferred
+                    );
+                    if (!added)
+                        return 0; // abort but with no error
+                }
+
+                // add one final null entry to mark the end of the operation
+                libWinFsp.FspFileSystemAddDirInfo(null, pBuffer, length, pBytesTransferred);
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
+            } catch (CharacterCodingException cce) {
+                throw new RuntimeException(cce);
             }
-
-            return res.getNtStatus();
         });
     }
 

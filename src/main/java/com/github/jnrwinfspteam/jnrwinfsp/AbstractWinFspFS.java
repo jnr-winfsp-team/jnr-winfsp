@@ -188,7 +188,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         if (isImplemented("setSecurity"))
             FSHelper.initSetSecurity(fsi, this);
         if (isImplemented("readDirectory"))
-            FSHelper.initReadDirectory(fsi, this);
+            FSHelper.initReadDirectory(fsi, this, this.libWinFsp);
     }
 
     private boolean isImplemented(String funcName) {

@@ -8,6 +8,7 @@ import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
 import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -164,12 +165,10 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
-                                    String fileName,
-                                    String pattern,
-                                    String marker,
-                                    Pointer pBuffer,
-                                    long length) {
+    public List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem,
+                                        String fileName,
+                                        String pattern,
+                                        String marker) throws NTStatusException {
         return null;
     }
 }

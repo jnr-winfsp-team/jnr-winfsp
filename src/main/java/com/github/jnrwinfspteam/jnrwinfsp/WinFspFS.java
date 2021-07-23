@@ -8,6 +8,7 @@ import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
 import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
 
+import java.util.List;
 import java.util.Set;
 
 public interface WinFspFS extends Mountable {
@@ -352,7 +353,9 @@ public interface WinFspFS extends Mountable {
     );
 
     /**
-     * Read a directory. See FspFileSystemAddDirInfo for more details.
+     * Read a directory. Returns a list of FileInfo.
+     * <p>
+     * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      *
      * @param fileSystem The file system on which this request is posted.
      * @param fileName   The name of the directory to be read.
@@ -362,22 +365,7 @@ public interface WinFspFS extends Mountable {
      * @param marker     A file name that marks where in the directory to start reading. Files with names
      *                   that are greater than (not equal to) this marker (in the directory order determined
      *                   by the file system) should be returned. Can be NULL.
-     * @param pBuffer    Pointer to a buffer that will receive the results of the read operation.
-     * @param length     Length of data to read.
-     * @return result with:
-     * <ul>
-     *     <li>STATUS_SUCCESS(0) and actual number of bytes read</li>
-     *     <li>OR STATUS_PENDING(0x103) and actual number of bytes read</li>
-     *     <li>OR error code</li>
-     * </ul>
-     * <p>
-     * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      */
-    ResultRead readDirectory(FSP_FILE_SYSTEM fileSystem,
-                             String fileName,
-                             String pattern,
-                             String marker,
-                             Pointer pBuffer,
-                             long length
-    );
+    List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem, String fileName, String pattern, String marker)
+            throws NTStatusException;
 }

@@ -48,7 +48,11 @@ public abstract class MemoryObj {
     }
 
     public FileInfo generateFileInfo() {
-        FileInfo res = new FileInfo();
+        return generateFileInfo(getPath().toString());
+    }
+
+    public FileInfo generateFileInfo(String filePath) {
+        FileInfo res = new FileInfo(filePath);
         res.getFileAttributes().addAll(fileAttributes);
         res.setAllocationSize(getAllocationSize());
         res.setFileSize(getFileSize());

@@ -4,10 +4,11 @@ import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class FileInfo {
-
+    private final String fileName;
     private final Set<FileAttributes> fileAttributes;
     private int reparseTag;
     private long allocationSize;
@@ -20,13 +21,18 @@ public class FileInfo {
     private final int hardLinks = 0; /* unimplemented: set to 0 */
     private int eaSize;
 
-    public FileInfo() {
+    public FileInfo(String fileName) {
+        this.fileName = Objects.requireNonNull(fileName);
         this.fileAttributes = EnumSet.noneOf(FileAttributes.class);
         WinSysTime now = WinSysTime.now();
         this.creationTime = now;
         this.lastAccessTime = now;
         this.lastWriteTime = now;
         this.changeTime = now;
+    }
+
+    public String getFileName() {
+        return fileName;
     }
 
     public final Set<FileAttributes> getFileAttributes() {
@@ -62,7 +68,7 @@ public class FileInfo {
     }
 
     public final void setCreationTime(WinSysTime creationTime) {
-        this.creationTime = creationTime;
+        this.creationTime = Objects.requireNonNull(creationTime);
     }
 
     public final WinSysTime getLastAccessTime() {
@@ -70,7 +76,7 @@ public class FileInfo {
     }
 
     public final void setLastAccessTime(WinSysTime lastAccessTime) {
-        this.lastAccessTime = lastAccessTime;
+        this.lastAccessTime = Objects.requireNonNull(lastAccessTime);
     }
 
     public final WinSysTime getLastWriteTime() {
@@ -78,7 +84,7 @@ public class FileInfo {
     }
 
     public final void setLastWriteTime(WinSysTime lastWriteTime) {
-        this.lastWriteTime = lastWriteTime;
+        this.lastWriteTime = Objects.requireNonNull(lastWriteTime);
     }
 
     public final WinSysTime getChangeTime() {
@@ -86,7 +92,7 @@ public class FileInfo {
     }
 
     public final void setChangeTime(WinSysTime changeTime) {
-        this.changeTime = changeTime;
+        this.changeTime = Objects.requireNonNull(changeTime);
     }
 
     public final long getIndexNumber() {

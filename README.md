@@ -14,3 +14,9 @@ of this repository:
 mvn test-compile
 mvn -D"exec.mainClass=com.github.jnrwinfspteam.jnrwinfsp.MainTest" -D"exec.classpathScope=test" exec:java
 ```
+
+To run the (WIP) memory file system, run the following instead:
+```
+mvn compile
+mvn -D"exec.mainClass=com.github.jnrwinfspteam.jnrwinfsp.memfs.WinFspMemFS" exec:java
+```

@@ -8,6 +8,7 @@ import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.result.FileInfo;
 import com.github.jnrwinfspteam.jnrwinfsp.result.VolumeInfo;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
+import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
 
 import java.io.BufferedReader;
@@ -60,12 +61,14 @@ public class WinFspMemFS extends WinFspStubFS {
 
     @Override
     public VolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) {
+
         System.out.println("=== GET VOLUME INFO");
         return generateVolumeInfo();
     }
 
     @Override
     public VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) {
+
         System.out.println("=== SET VOLUME LABEL");
         this.volumeLabel = volumeLabel;
         return generateVolumeInfo();
@@ -105,7 +108,7 @@ public class WinFspMemFS extends WinFspStubFS {
                 obj = file;
             }
 
-            objects.put(filePath.toString(), obj);
+            putObject(obj);
 
             return obj.generateFileInfo();
         }
@@ -172,12 +175,117 @@ public class WinFspMemFS extends WinFspStubFS {
 
     @Override
     public FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+
         System.out.println("=== GET FILE INFO " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj obj = getObject(filePath);
 
             return obj.generateFileInfo();
+        }
+    }
+
+    @Override
+    public FileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
+                                 String fileName,
+                                 Set<FileAttributes> fileAttributes,
+                                 WinSysTime creationTime,
+                                 WinSysTime lastAccessTime,
+                                 WinSysTime lastWriteTime,
+                                 WinSysTime changeTime) throws NTStatusException {
+
+        System.out.println("=== SET BASIC INFO " + fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            MemoryObj obj = getObject(filePath);
+
+            if (!fileAttributes.contains(FileAttributes.INVALID_FILE_ATTRIBUTES)) {
+                obj.getFileAttributes().clear();
+                obj.getFileAttributes().addAll(fileAttributes);
+            }
+            if (creationTime.get() != 0)
+                obj.setCreationTime(creationTime);
+            if (lastAccessTime.get() != 0)
+                obj.setAccessTime(lastAccessTime);
+            if (lastWriteTime.get() != 0)
+                obj.setWriteTime(changeTime);
+
+            return obj.generateFileInfo();
+        }
+    }
+
+    @Override
+    public FileInfo setFileSize(FSP_FILE_SYSTEM fileSystem, String fileName, long newSize, boolean setAllocationSize)
+            throws NTStatusException {
+
+        System.out.println("=== SET FILE SIZE " + fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            FileObj file = getFileObject(filePath);
+
+            if (setAllocationSize)
+                file.setAllocationSize(Math.toIntExact(newSize));
+            else
+                file.setFileSize(Math.toIntExact(newSize));
+
+            return file.generateFileInfo();
+        }
+    }
+
+    @Override
+    public void canDelete(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+
+        System.out.println("=== CAN DELETE " + fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            MemoryObj memObj = getObject(filePath);
+
+            if (memObj instanceof DirObj) {
+                var dir = (DirObj) memObj;
+                for (var obj : objects.values()) {
+                    if (obj.getPath().startsWith(dir.getPath())
+                            && !obj.getPath().equals(dir.getPath()))
+                        throw new NTStatusException(0xC0000101); // STATUS_DIRECTORY_NOT_EMPTY
+                }
+            }
+        }
+    }
+
+    @Override
+    public void rename(FSP_FILE_SYSTEM fileSystem, String fileName, String newFileName, boolean replaceIfExists)
+            throws NTStatusException {
+
+        System.out.println("=== RENAME " + fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            Path newFilePath = getPath(newFileName);
+
+            MemoryObj memObj = getObject(filePath);
+            // Handle existing new file/directory scenario
+            if (hasObject(newFilePath)) {
+                // case-sensitive comparison
+                if (Objects.equals(
+                        Objects.toString(Path.of(newFileName).normalize().getFileName(), null),
+                        memObj.getName())
+                ) {
+                    if (!replaceIfExists)
+                        throw new NTStatusException(0xC0000035); // STATUS_OBJECT_NAME_COLLISION
+                    else if (memObj instanceof DirObj)
+                        // a directory cannot be renamed to one that already exists
+                        throw new NTStatusException(0xC0000022); // STATUS_ACCESS_DENIED
+                }
+            }
+
+            // Rename file or directory (and all existing children)
+            for (var obj : List.copyOf(objects.values())) {
+                if (obj.getPath().startsWith(filePath)) {
+                    Path relativePath = obj.getPath().relativize(filePath);
+                    Path newObjPath = newFilePath.resolve(relativePath);
+                    MemoryObj newObj = removeObject(obj.getPath());
+                    newObj.setPath(newObjPath);
+                    putObject(newObj);
+                }
+            }
         }
     }
 
@@ -226,16 +334,31 @@ public class WinFspMemFS extends WinFspStubFS {
         return Path.of(filePath).normalize();
     }
 
+    private String getPathKey(Path filePath) {
+        if (filePath == null)
+            return null;
+        else
+            return filePath.toString().toLowerCase(Locale.ROOT);
+    }
+
     private boolean hasObject(Path filePath) {
-        return objects.containsKey(String.valueOf(filePath));
+        return objects.containsKey(getPathKey(filePath));
     }
 
     private MemoryObj getObject(Path filePath) throws NTStatusException {
-        MemoryObj obj = objects.get(String.valueOf(filePath));
+        MemoryObj obj = objects.get(getPathKey(filePath));
         if (obj == null)
             throw new NTStatusException(0xC0000034); // STATUS_OBJECT_NAME_NOT_FOUND
 
         return obj;
+    }
+
+    private void putObject(MemoryObj obj) {
+        objects.put(getPathKey(obj.getPath()), obj);
+    }
+
+    private MemoryObj removeObject(Path filePath) {
+        return objects.remove(getPathKey(filePath));
     }
 
     private FileObj getFileObject(Path filePath) throws NTStatusException {

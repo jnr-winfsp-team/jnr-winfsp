@@ -6,11 +6,12 @@ import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
 public abstract class MemoryObj {
-    private final Path path;
+    private Path path;
     private String securityDescriptor;
     private final Set<FileAttributes> fileAttributes;
     private WinSysTime creationTime;
@@ -36,7 +37,11 @@ public abstract class MemoryObj {
     }
 
     public String getName() {
-        return path.getFileName().toString();
+        return path.getNameCount() > 0 ? path.getFileName().toString() : null;
+    }
+
+    public void setPath(Path path) {
+        this.path = Objects.requireNonNull(path);
     }
 
     public String getSecurityDescriptor() {

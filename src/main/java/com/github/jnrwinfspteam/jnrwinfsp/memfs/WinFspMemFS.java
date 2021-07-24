@@ -3,6 +3,7 @@ package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 import com.github.jnrwinfspteam.jnrwinfsp.MountException;
 import com.github.jnrwinfspteam.jnrwinfsp.NTStatusException;
 import com.github.jnrwinfspteam.jnrwinfsp.WinFspStubFS;
+import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.result.FileInfo;
@@ -153,6 +154,42 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
+    public void cleanup(FSP_FILE_SYSTEM fileSystem, String fileName, Set<CleanupFlags> flags) {
+
+        System.out.println("=== CLEANUP " + fileName);
+        try {
+            synchronized (objects) {
+                Path filePath = getPath(fileName);
+                MemoryObj memObj = getObject(filePath);
+
+                if (flags.contains(CleanupFlags.DELETE)) {
+                    if (isNotEmptyDirectory(memObj))
+                        return; // abort if trying to remove a non-empty directory
+                    removeObject(memObj.getPath());
+                }
+
+                if (flags.contains(CleanupFlags.SET_ALLOCATION_SIZE) && memObj instanceof FileObj)
+                    ((FileObj) memObj).adaptAllocationSize(memObj.getFileSize());
+
+                if (flags.contains(CleanupFlags.SET_ARCHIVE_BIT) && memObj instanceof FileObj)
+                    memObj.getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_ARCHIVE);
+
+                if (flags.contains(CleanupFlags.SET_LAST_ACCESS_TIME))
+                    memObj.setAccessTime(WinSysTime.now());
+
+                if (flags.contains(CleanupFlags.SET_LAST_WRITE_TIME))
+                    memObj.setWriteTime(WinSysTime.now());
+
+                if (flags.contains(CleanupFlags.SET_CHANGE_TIME))
+                    memObj.setChangeTime(WinSysTime.now());
+
+            }
+        } catch (NTStatusException e) {
+            // we have no way to pass an error status via cleanup
+        }
+    }
+
+    @Override
     public void close(FSP_FILE_SYSTEM fileSystem, String fileName) {
         System.out.println("=== CLOSE " + fileName);
     }
@@ -171,6 +208,11 @@ public class WinFspMemFS extends WinFspStubFS {
 
             return file.read(pBuffer, Math.toIntExact(offset), Math.toIntExact(length));
         }
+    }
+
+    @Override
+    public void flush(FSP_FILE_SYSTEM fileSystem, String fileName) {
+        System.out.println("=== FLUSH " + fileName);
     }
 
     @Override
@@ -240,14 +282,8 @@ public class WinFspMemFS extends WinFspStubFS {
             Path filePath = getPath(fileName);
             MemoryObj memObj = getObject(filePath);
 
-            if (memObj instanceof DirObj) {
-                var dir = (DirObj) memObj;
-                for (var obj : objects.values()) {
-                    if (obj.getPath().startsWith(dir.getPath())
-                            && !obj.getPath().equals(dir.getPath()))
-                        throw new NTStatusException(0xC0000101); // STATUS_DIRECTORY_NOT_EMPTY
-                }
-            }
+            if (isNotEmptyDirectory(memObj))
+                throw new NTStatusException(0xC0000101); // STATUS_DIRECTORY_NOT_EMPTY
         }
     }
 
@@ -328,6 +364,18 @@ public class WinFspMemFS extends WinFspStubFS {
 
             return entries;
         }
+    }
+
+    private boolean isNotEmptyDirectory(MemoryObj dir) {
+        if (dir instanceof DirObj) {
+            for (var obj : objects.values()) {
+                if (obj.getPath().startsWith(dir.getPath())
+                        && !obj.getPath().equals(dir.getPath()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private Path getPath(String filePath) {

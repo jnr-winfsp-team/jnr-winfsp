@@ -43,7 +43,7 @@ public class FileObj extends MemoryObj {
         data.limit(fileSize);
     }
 
-    private synchronized void adaptAllocationSize(int fileSize) {
+    public synchronized void adaptAllocationSize(int fileSize) {
         int units = (Math.addExact(fileSize, ALLOCATION_UNIT) - 1) / ALLOCATION_UNIT;
         setAllocationSize(units * ALLOCATION_UNIT);
     }

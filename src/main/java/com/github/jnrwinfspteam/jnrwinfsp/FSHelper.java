@@ -372,7 +372,7 @@ final class FSHelper {
 
                     Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
                     FSP_FSCTL_DIR_INFO di = diP.get();
-                    di.Size.set(Struct.size(di) + fileNameBytes.length);
+                    di.Size.set(Struct.size(di)); // size already includes file name length
                     di.FileInfo.FileAttributes.set(FileAttributes.intValueOf(fi.getFileAttributes()));
                     di.FileInfo.ReparseTag.set(fi.getReparseTag());
                     di.FileInfo.AllocationSize.set(fi.getAllocationSize());

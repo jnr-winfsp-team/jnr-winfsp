@@ -137,7 +137,7 @@ public interface LibWinFsp {
     boolean FspFileSystemAddDirInfo(
             Pointer /* FSP_FSCTL_DIR_INFO */ dirInfo,
             Pointer /* VOID */ buffer,
-            long length,
+            @u_int32_t int length,
             Pointer /* ULONG */ pBytesTransferred
     );
 }

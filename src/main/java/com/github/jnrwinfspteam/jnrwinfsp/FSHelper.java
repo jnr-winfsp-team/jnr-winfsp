@@ -153,7 +153,7 @@ final class FSHelper {
     static void initCleanup(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Cleanup.set((pFS, pFileContext, pFileName, flags) -> {
             String fileName = StringUtils.fromPointer(pFileName);
-            EnumSet<CleanupFlags> cleanupFlags = CleanupFlags.setValueOf(Math.toIntExact(flags));
+            EnumSet<CleanupFlags> cleanupFlags = CleanupFlags.setValueOf(flags);
             winfsp.cleanup(
                     fs(pFS),
                     fileName,

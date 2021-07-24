@@ -247,7 +247,7 @@ public final class WinFspCallbacks {
         void Cleanup(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                      Pointer /* VOID */ pFileContext,
                      Pointer /* WSTR */ pFileName,
-                     long flags
+                     @u_int32_t int flags
         );
     }
 
@@ -286,7 +286,7 @@ public final class WinFspCallbacks {
                  Pointer /* VOID */ pFileContext,
                  Pointer /* VOID */ pBuffer,
                  @u_int64_t long offset,
-                 long length,
+                 @u_int32_t int length,
                  Pointer /* ULONG */ pBytesTransferred
         );
     }
@@ -318,7 +318,7 @@ public final class WinFspCallbacks {
                   Pointer /* VOID */ pFileContext,
                   Pointer /* VOID */ pBuffer,
                   @u_int64_t long offset,
-                  long length,
+                  @u_int32_t int length,
                   boolean writeToEndOfFile,
                   boolean constrainedIo,
                   Pointer /* ULONG */ pBytesTransferred,
@@ -580,7 +580,7 @@ public final class WinFspCallbacks {
                           Pointer /* WSTR */ pPattern,
                           Pointer /* WSTR */ pMarker,
                           Pointer /* VOID */ pBuffer,
-                          long length,
+                          @u_int32_t int length,
                           Pointer /* ULONG */ pBytesTransferred
         );
     }

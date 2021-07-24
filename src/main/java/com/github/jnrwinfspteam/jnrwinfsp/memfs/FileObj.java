@@ -15,7 +15,7 @@ public class FileObj extends MemoryObj {
 
     public FileObj(Path path, String securityDescriptor) {
         super(path, securityDescriptor);
-        this.data = ByteBuffer.allocate(0);
+        this.data = ByteBuffer.allocate(0).limit(0);
         getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_ARCHIVE);
     }
 
@@ -72,7 +72,8 @@ public class FileObj extends MemoryObj {
         }
     }
 
-    public synchronized int read(Pointer buffer, int offset, int size) throws NTStatusException {
+    public synchronized int read(Pointer buffer, long offsetL, int size) throws NTStatusException {
+        final int offset = Math.toIntExact(offsetL);
         if (offset > getFileSize())
             throw new NTStatusException(0xC0000011); // STATUS_END_OF_FILE
 
@@ -88,7 +89,8 @@ public class FileObj extends MemoryObj {
         return bytesToRead;
     }
 
-    public synchronized int write(Pointer buffer, int offset, int size, boolean writeToEndOfFile) {
+    public synchronized int write(Pointer buffer, long offsetL, int size, boolean writeToEndOfFile) {
+        int offset = Math.toIntExact(offsetL);
         if (writeToEndOfFile)
             offset = getFileSize();
 
@@ -100,14 +102,15 @@ public class FileObj extends MemoryObj {
         buffer.get(0, dst, 0, size);
         data.position(offset);
         data.put(dst);
-        data.rewind();
+        data.flip();
 
         setWriteTimes();
 
         return size;
     }
 
-    public synchronized int constrainedWrite(Pointer buffer, int offset, int size) {
+    public synchronized int constrainedWrite(Pointer buffer, long offsetL, int size) {
+        final int offset = Math.toIntExact(offsetL);
         if (offset >= getFileSize())
             return 0;
 
@@ -118,7 +121,7 @@ public class FileObj extends MemoryObj {
         buffer.get(0, dst, 0, transferredLength);
         data.position(offset);
         data.put(dst);
-        data.rewind();
+        data.flip();
 
         setWriteTimes();
 

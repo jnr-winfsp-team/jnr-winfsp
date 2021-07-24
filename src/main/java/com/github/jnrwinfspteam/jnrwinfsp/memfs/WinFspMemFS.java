@@ -199,14 +199,35 @@ public class WinFspMemFS extends WinFspStubFS {
                      String fileName,
                      Pointer pBuffer,
                      long offset,
-                     long length) throws NTStatusException {
+                     int length) throws NTStatusException {
 
         System.out.println("=== READ " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             FileObj file = getFileObject(filePath);
 
-            return file.read(pBuffer, Math.toIntExact(offset), Math.toIntExact(length));
+            return file.read(pBuffer, offset, length);
+        }
+    }
+
+    @Override
+    public long write(FSP_FILE_SYSTEM fileSystem,
+                      String fileName,
+                      Pointer pBuffer,
+                      long offset,
+                      int length,
+                      boolean writeToEndOfFile,
+                      boolean constrainedIo) throws NTStatusException {
+
+        System.out.println("=== WRITE " + fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            FileObj file = getFileObject(filePath);
+
+            if (constrainedIo)
+                return file.constrainedWrite(pBuffer, offset, length);
+            else
+                return file.write(pBuffer, offset, length, writeToEndOfFile);
         }
     }
 

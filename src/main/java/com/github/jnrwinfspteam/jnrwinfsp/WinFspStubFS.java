@@ -84,7 +84,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
                      String fileName,
                      Pointer pBuffer,
                      long offset,
-                     long length) throws NTStatusException {
+                     int length) throws NTStatusException {
         return 0;
     }
 
@@ -94,7 +94,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
                       String fileName,
                       Pointer pBuffer,
                       long offset,
-                      long length,
+                      int length,
                       boolean writeToEndOfFile,
                       boolean constrainedIo) throws NTStatusException {
         return 0;

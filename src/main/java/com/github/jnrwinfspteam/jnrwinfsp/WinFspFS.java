@@ -182,7 +182,7 @@ public interface WinFspFS extends Mountable {
      * @param offset     Offset within the file to read from.
      * @param length     Length of data to read.
      */
-    long read(FSP_FILE_SYSTEM fileSystem, String fileName, Pointer pBuffer, long offset, long length)
+    long read(FSP_FILE_SYSTEM fileSystem, String fileName, Pointer pBuffer, long offset, int length)
             throws NTStatusException;
 
     /**
@@ -203,7 +203,7 @@ public interface WinFspFS extends Mountable {
                String fileName,
                Pointer pBuffer,
                long offset,
-               long length,
+               int length,
                boolean writeToEndOfFile,
                boolean constrainedIo
     ) throws NTStatusException;

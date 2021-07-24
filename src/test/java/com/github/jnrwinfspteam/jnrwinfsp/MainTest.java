@@ -121,7 +121,7 @@ public class MainTest {
                          String fileName,
                          Pointer pBuffer,
                          long offset,
-                         long length) {
+                         int length) {
             System.out.println("=== READ " + fileName);
             return length;
         }

@@ -159,9 +159,6 @@ final class FSHelper {
                     fileName,
                     cleanupFlags
             );
-
-            if (cleanupFlags.contains(CleanupFlags.DELETE))
-                StringUtils.freeStringPointer(pFileContext);
         });
     }
 

@@ -74,7 +74,7 @@ public class FileObj extends MemoryObj {
 
     public synchronized int read(Pointer buffer, long offsetL, int size) throws NTStatusException {
         final int offset = Math.toIntExact(offsetL);
-        if (offset > getFileSize())
+        if (offset >= getFileSize())
             throw new NTStatusException(0xC0000011); // STATUS_END_OF_FILE
 
         int bytesToRead = Math.min(getFileSize() - offset, size);

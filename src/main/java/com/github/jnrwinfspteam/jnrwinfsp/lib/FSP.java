@@ -10,4 +10,8 @@ public final class FSP {
     public static final int FSCTL_VOLUME_NAME_SIZEMAX = FSCTL_VOLUME_NAME_SIZE + FSCTL_VOLUME_PREFIX_SIZE;
 
     public static final int FsctlTransactKindCount = 22; // FIXME this corresponds to the last value of a C enum
+
+    private FSP() {
+        // not instantiable
+    }
 }

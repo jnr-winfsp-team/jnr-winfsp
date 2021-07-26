@@ -3,8 +3,7 @@ package com.github.jnrwinfspteam.jnrwinfsp;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
-import com.github.jnrwinfspteam.jnrwinfsp.lib.LibWinFsp;
-import com.github.jnrwinfspteam.jnrwinfsp.lib.StringUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.lib.*;
 import com.github.jnrwinfspteam.jnrwinfsp.result.*;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.*;
 import com.github.jnrwinfspteam.jnrwinfsp.util.Pointered;
@@ -53,48 +52,29 @@ final class FSHelper {
         });
     }
 
-    static void initGetSecurityByName(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
-        fsi.GetSecurityByName.set((pFS, pFileName, pFileAttributes, pSecurityDescriptor, pSecurityDescriptorSize) -> {
-            ResultSecurityAndAttributes res = winfsp.getSecurityByName(fs(pFS), StringUtils.fromPointer(pFileName));
-
-            if (res.getNtStatus() == 0 || res.getNtStatus() == 0x104) {
-                if (pFileAttributes != null)
-                    pFileAttributes.putInt(0, res.getFileAttributes());
-
-                // Get file security
-                if (pSecurityDescriptorSize != null) {
-                    int sdSize = res.getSecurityDescriptorSize();
-                    if (sdSize > pSecurityDescriptorSize.getInt(0)) {
-                        // In case of overflow error, WinFsp will retry with a new
-                        // allocation based on `pSecurityDescriptorSize`. Hence we
-                        // must update this value to the required size.
-                        pSecurityDescriptorSize.putInt(0, sdSize);
-                        return 0x80000005; // STATUS_BUFFER_OVERFLOW
-                    }
-
-                    pSecurityDescriptorSize.putInt(0, sdSize);
-                    if (pSecurityDescriptor != null) {
-                        pSecurityDescriptor.transferFrom(0, res.getSecurityDescriptor(), 0, sdSize);
-                    }
-                }
-            }
-
-            return res.getNtStatus();
-        });
-    }
-
-    static void initCreate(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    static void initCreate(FSP_FILE_SYSTEM_INTERFACE fsi,
+                           WinFspFS winfsp,
+                           LibWinFsp libWinFsp,
+                           LibKernel32 libKernel32,
+                           LibAdvapi32 libAdvapi32
+    ) {
         fsi.Create.set((pFS, pFileName, createOptions, grantedAccess, fileAttributes,
                         pSecurityDescriptor, allocationSize, ppFileContext, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
+                String securityDescriptorStr = SecurityUtils.toString(
+                        libWinFsp,
+                        libKernel32,
+                        libAdvapi32,
+                        pSecurityDescriptor
+                );
                 FileInfo fi = winfsp.create(
                         fs(pFS),
                         fileName,
                         CreateOptions.setValueOf(createOptions),
                         grantedAccess,
                         FileAttributes.setValueOf(fileAttributes),
-                        pSecurityDescriptor,
+                        securityDescriptorStr,
                         allocationSize
                 );
 
@@ -319,39 +299,58 @@ final class FSHelper {
         });
     }
 
-    static void initGetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    static void initGetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi,
+                                WinFspFS winfsp,
+                                LibWinFsp libWinFsp,
+                                LibKernel32 libKernel32,
+                                LibAdvapi32 libAdvapi32
+    ) {
         fsi.GetSecurity.set((pFS, pFileContext, pSecurityDescriptor, pSecurityDescriptorSize) -> {
-            String fileName = StringUtils.fromPointer(pFileContext);
-            ResultSecurity res = winfsp.getSecurity(fs(pFS), fileName);
+            try {
+                String fileName = StringUtils.fromPointer(pFileContext);
+                String securityDescriptorStr = winfsp.getSecurity(fs(pFS), fileName);
 
-            if (res.getNtStatus() == 0) {
-                // Get file security
-                if (pSecurityDescriptorSize != null) {
-                    int sdSize = res.getSecurityDescriptorSize();
-                    if (sdSize > pSecurityDescriptorSize.getInt(0)) {
-                        // In case of overflow error, WinFsp will retry with a new
-                        // allocation based on `pSecurityDescriptorSize`. Hence we
-                        // must update this value to the required size.
-                        pSecurityDescriptorSize.putInt(0, sdSize);
-                        return 0x80000005; // STATUS_BUFFER_OVERFLOW
-                    }
+                SecurityUtils.fromString(
+                        libWinFsp,
+                        libKernel32,
+                        libAdvapi32,
+                        securityDescriptorStr,
+                        pSecurityDescriptor,
+                        pSecurityDescriptorSize
+                );
 
-                    pSecurityDescriptorSize.putInt(0, sdSize);
-                    if (pSecurityDescriptor != null) {
-                        pSecurityDescriptor.transferFrom(0, res.getSecurityDescriptor(), 0, sdSize);
-                    }
-                }
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
             }
-
-            return res.getNtStatus();
         });
     }
 
-    static void initSetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    static void initSetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi,
+                                WinFspFS winfsp,
+                                LibWinFsp libWinFsp,
+                                LibKernel32 libKernel32,
+                                LibAdvapi32 libAdvapi32
+    ) {
         fsi.SetSecurity.set((pFS, pFileContext, securityInformation, pModificationDescriptor) -> {
-            String fileName = StringUtils.fromPointer(pFileContext);
-            Result res = winfsp.setSecurity(fs(pFS), fileName, securityInformation, pModificationDescriptor);
-            return res.getNtStatus();
+            try {
+                String fileName = StringUtils.fromPointer(pFileContext);
+                String securityDescriptorStr = winfsp.getSecurity(fs(pFS), fileName);
+                String modifiedSecurityDescriptorStr = SecurityUtils.modify(
+                        libWinFsp,
+                        libKernel32,
+                        libAdvapi32,
+                        securityDescriptorStr,
+                        securityInformation,
+                        pModificationDescriptor
+                );
+
+                winfsp.setSecurity(fs(pFS), fileName, modifiedSecurityDescriptorStr);
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
+            }
         });
     }
 

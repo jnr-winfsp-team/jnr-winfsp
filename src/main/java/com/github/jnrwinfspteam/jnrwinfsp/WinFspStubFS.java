@@ -31,18 +31,12 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public ResultSecurityAndAttributes getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) {
-        return null;
-    }
-
-    @Override
-    @NotImplemented
     public FileInfo create(FSP_FILE_SYSTEM fileSystem,
                            String fileName,
                            Set<CreateOptions> createOptions,
                            int grantedAccess,
                            Set<FileAttributes> fileAttributes,
-                           Pointer pSecurityDescriptor,
+                           String securityDescriptorString,
                            long allocationSize) throws NTStatusException {
         return null;
     }
@@ -150,17 +144,15 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) {
+    public String getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
         return null;
     }
 
     @Override
     @NotImplemented
-    public Result setSecurity(FSP_FILE_SYSTEM fileSystem,
-                              String fileName,
-                              int securityInformation,
-                              Pointer pModificationDescriptor) {
-        return null;
+    public void setSecurity(FSP_FILE_SYSTEM fileSystem,
+                            String fileName,
+                            String securityDescriptorStr) throws NTStatusException {
     }
 
     @Override

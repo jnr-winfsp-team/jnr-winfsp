@@ -9,7 +9,7 @@ import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.charset.*;
 
-public class StringUtils {
+public final class StringUtils {
     public static final int CS_BYTES_PER_CHAR = 2;
     public static final Charset CS = ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)
             ? StandardCharsets.UTF_16LE
@@ -49,16 +49,37 @@ public class StringUtils {
      * @return A pointer (null if the string is null)
      */
     public static Pointer toPointer(Runtime runtime, String s) {
+        return _toString(runtime, s, false);
+    }
+
+    /**
+     * Returns a temporary pointer containing the contents of the given string, encoded with the configured charset.
+     *
+     * @param s A string
+     * @return A pointer (null if the string is null)
+     */
+    public static Pointer toTemporaryPointer(Runtime runtime, String s) {
+        return _toString(runtime, s, true);
+    }
+
+    private static Pointer _toString(Runtime runtime, String s, boolean temporaryPointer) {
         if (s == null)
             return null;
 
         try {
             byte[] bytes = getEncoder().reset().encode(CharBuffer.wrap(s)).array();
 
-            long address = MemoryIO.getInstance().allocateMemory(bytes.length + 1, true);
-            Pointer p = Pointer.wrap(runtime, address,bytes.length + 1);
+            final Pointer p;
+            if (temporaryPointer) {
+                p = runtime.getMemoryManager().allocateTemporary(bytes.length + 1, true);
+            } else {
+                long address = MemoryIO.getInstance().allocateMemory(bytes.length + 1, true);
+                p = Pointer.wrap(runtime, address, bytes.length + 1);
+            }
+
             p.put(0, bytes, 0, bytes.length);
             p.putByte(bytes.length, (byte) 0);
+
             return p;
         } catch (CharacterCodingException cce) {
             throw new RuntimeException(cce);
@@ -108,5 +129,9 @@ public class StringUtils {
                 throw new RuntimeException(cce);
             }
         }
+    }
+
+    private StringUtils() {
+        // not instantiable
     }
 }

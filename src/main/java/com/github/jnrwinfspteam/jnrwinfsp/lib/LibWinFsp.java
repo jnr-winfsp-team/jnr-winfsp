@@ -117,6 +117,29 @@ public interface LibWinFsp {
     );
 
     /**
+     * Modify security descriptor.
+     * <p>
+     * This is a helper for implementing the SetSecurity operation.
+     *
+     * @param inputDescriptor         The input security descriptor to be modified.
+     * @param securityInformation     Describes what parts of the InputDescriptor should be modified. This should contain
+     *                                the same value passed to the SetSecurity SecurityInformation parameter.
+     * @param pModificationDescriptor Describes the modifications to apply to the InputDescriptor. This should contain
+     *                                the same value passed to the SetSecurity ModificationDescriptor parameter.
+     * @param ppSecurityDescriptor    [out]
+     *                                Pointer to a memory location that will receive the resulting security descriptor.
+     *                                This security descriptor can be later freed using FspDeleteSecurityDescriptor.
+     * @return STATUS_SUCCESS or error code.
+     */
+    @u_int32_t
+    int FspSetSecurityDescriptor(
+            Pointer /* SECURITY_DESCRIPTOR */ inputDescriptor,
+            @u_int32_t int securityInformation,
+            Pointer /* SECURITY_DESCRIPTOR */ pModificationDescriptor,
+            @Out PointerByReference /* PSECURITY_DESCRIPTOR */ ppSecurityDescriptor
+    );
+
+    /**
      * Add directory information to a buffer.
      * <p>
      * This is a helper for implementing the ReadDirectory operation.
@@ -140,4 +163,7 @@ public interface LibWinFsp {
             @u_int32_t int length,
             Pointer /* ULONG */ pBytesTransferred
     );
+
+    @u_int32_t
+    int FspNtStatusFromWin32(@u_int32_t int error);
 }

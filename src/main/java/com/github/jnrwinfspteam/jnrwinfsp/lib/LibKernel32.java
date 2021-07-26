@@ -14,4 +14,6 @@ public interface LibKernel32 {
      * @return A handle to the specified standard device (standard input, output, or error)
      */
     Pointer GetStdHandle(int nStdHandle);
+
+    Pointer LocalFree(Pointer /* HLOCAL */ hMem);
 }

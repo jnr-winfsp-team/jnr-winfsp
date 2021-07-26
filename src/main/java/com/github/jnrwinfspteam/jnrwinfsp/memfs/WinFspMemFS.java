@@ -75,18 +75,13 @@ public class WinFspMemFS extends WinFspStubFS {
         return generateVolumeInfo();
     }
 
-//    @Override
-//    public ResultSecurityAndAttributes getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) {
-//        MemoryObj memObj = entries.get(fileName);
-//    }
-
     @Override
     public FileInfo create(FSP_FILE_SYSTEM fileSystem,
                            String fileName,
                            Set<CreateOptions> createOptions,
                            int grantedAccess,
                            Set<FileAttributes> fileAttributes,
-                           Pointer pSecurityDescriptor,
+                           String securityDescriptorString,
                            long allocationSize) throws NTStatusException {
 
         System.out.println("=== CREATE " + fileName);
@@ -102,9 +97,9 @@ public class WinFspMemFS extends WinFspStubFS {
 
             MemoryObj obj;
             if (createOptions.contains(CreateOptions.FILE_DIRECTORY_FILE))
-                obj = new DirObj(filePath, SECURITY_DESCRIPTOR);
+                obj = new DirObj(filePath, securityDescriptorString);
             else {
-                var file = new FileObj(filePath, SECURITY_DESCRIPTOR);
+                var file = new FileObj(filePath, securityDescriptorString);
                 file.setAllocationSize(Math.toIntExact(allocationSize));
                 obj = file;
             }
@@ -343,6 +338,30 @@ public class WinFspMemFS extends WinFspStubFS {
                     putObject(newObj);
                 }
             }
+        }
+    }
+
+    @Override
+    public String getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+
+        System.out.println("=== GET SECURITY " + fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            MemoryObj memObj = getObject(filePath);
+
+            return memObj.getSecurityDescriptor();
+        }
+    }
+
+    @Override
+    public void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, String securityDescriptorStr)
+            throws NTStatusException {
+
+        System.out.println("=== SET SECURITY " + fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            MemoryObj memObj = getObject(filePath);
+            memObj.setSecurityDescriptor(securityDescriptorStr);
         }
     }
 

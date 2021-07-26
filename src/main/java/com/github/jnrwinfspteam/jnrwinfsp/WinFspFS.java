@@ -28,53 +28,34 @@ public interface WinFspFS extends Mountable {
     VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) throws NTStatusException;
 
     /**
-     * Get file or directory attributes and security descriptor given a file name.
-     *
-     * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the file or directory to get the attributes and security descriptor for.
-     * @return result with:
-     * <ul>
-     *     <li>STATUS_SUCCESS(0) and (non-null) file attributes, security descriptor and size</li>
-     *     <li>OR STATUS_REPARSE(0x104) and index of the first reparse point within fileName (may be 0), security descriptor and size </li>
-     *     <li>OR error code and null file attributes, security descriptor and size</li>
-     * </ul>
-     * <p>
-     *  NOTE: STATUS_REPARSE(0x104) should be returned by file systems that support reparse points when
-     *  they encounter a fileName that contains reparse points anywhere but the final path
-     *  component.
-     */
-    ResultSecurityAndAttributes getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName);
-
-    /**
      * Create new file or directory.
      *
-     * @param fileSystem          The file system on which this request is posted.
-     * @param fileName            The name of the file or directory to be created.
-     * @param createOptions       Create options for this request. This parameter has the same meaning as the
-     *                            CreateOptions parameter of the NtCreateFile API. User mode file systems should typically
-     *                            only be concerned with the flag FILE_DIRECTORY_FILE, which is an instruction to create a
-     *                            directory rather than a file. Some file systems may also want to pay attention to the
-     *                            FILE_NO_INTERMEDIATE_BUFFERING and FILE_WRITE_THROUGH flags, although these are
-     *                            typically handled by the FSD component.
-     * @param grantedAccess       Determines the specific access rights that have been granted for this request. Upon
-     *                            receiving this call all access checks have been performed and the user mode file system
-     *                            need not perform any additional checks. However this parameter may be useful to a user
-     *                            mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
-     *                            which flags to use in its POSIX open() call.
-     * @param fileAttributes      File attributes to apply to the newly created file or directory.
-     * @param pSecurityDescriptor Security descriptor to apply to the newly created file or directory. This security
-     *                            descriptor will always be in self-relative format. Its length can be retrieved using the
-     *                            Windows GetSecurityDescriptorLength API. Will be NULL for named streams.
-     * @param allocationSize      Allocation size for the newly created file.
+     * @param fileSystem               The file system on which this request is posted.
+     * @param fileName                 The name of the file or directory to be created.
+     * @param createOptions            Create options for this request. This parameter has the same meaning as the
+     *                                 CreateOptions parameter of the NtCreateFile API. User mode file systems should typically
+     *                                 only be concerned with the flag FILE_DIRECTORY_FILE, which is an instruction to create a
+     *                                 directory rather than a file. Some file systems may also want to pay attention to the
+     *                                 FILE_NO_INTERMEDIATE_BUFFERING and FILE_WRITE_THROUGH flags, although these are
+     *                                 typically handled by the FSD component.
+     * @param grantedAccess            Determines the specific access rights that have been granted for this request. Upon
+     *                                 receiving this call all access checks have been performed and the user mode file system
+     *                                 need not perform any additional checks. However this parameter may be useful to a user
+     *                                 mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
+     *                                 which flags to use in its POSIX open() call.
+     * @param fileAttributes           File attributes to apply to the newly created file or directory.
+     * @param securityDescriptorString Security descriptor string to apply to the newly created file or directory. This security
+     *                                 descriptor will always be in self-relative format. Will be NULL for named streams.
+     * @param allocationSize           Allocation size for the newly created file.
      */
     FileInfo create(FSP_FILE_SYSTEM fileSystem,
                     String fileName,
                     Set<CreateOptions> createOptions,
                     int grantedAccess,
                     Set<FileAttributes> fileAttributes,
-                    Pointer pSecurityDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */,
-                    long allocationSize)
-            throws NTStatusException;
+                    String securityDescriptorString,
+                    long allocationSize
+    ) throws NTStatusException;
 
     /**
      * Open a file or directory.
@@ -109,8 +90,8 @@ public interface WinFspFS extends Mountable {
                        String fileName,
                        Set<FileAttributes> fileAttributes,
                        boolean replaceFileAttributes,
-                       long allocationSize)
-            throws NTStatusException;
+                       long allocationSize
+    ) throws NTStatusException;
 
     /**
      * Cleanup a file.
@@ -319,38 +300,22 @@ public interface WinFspFS extends Mountable {
             throws NTStatusException;
 
     /**
-     * Get file or directory security descriptor.
+     * Get file or directory security descriptor string.
      *
      * @param fileSystem The file system on which this request is posted.
      * @param fileName   The name of the file or directory to get the security descriptor for.
-     * @return result with:
-     * <ul>
-     *     <li>STATUS_SUCCESS(0) and (non-null) security descriptor and size</li>
-     *     <li>OR error code and null security descriptor and size</li>
-     * </ul>
      */
-    ResultSecurity getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName);
+    String getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
 
     /**
-     * Set file or directory security descriptor. See FspSetSecurityDescriptor or FspDeleteSecurityDescriptor
-     * for more details.
+     * Set file or directory security descriptor string.
      *
-     * @param fileSystem              The file system on which this request is posted.
-     * @param fileName                The name of the file or directory to set the security descriptor for.
-     * @param securityInformation     Describes what parts of the file or directory security descriptor should
-     *                                be modified.
-     * @param pModificationDescriptor Describes the modifications to apply to the file or directory security descriptor.
-     * @return result with:
-     * <ul>
-     *    <li>STATUS_SUCCESS(0)</li>
-     *    <li>OR error code</li>
-     * </ul>
+     * @param fileSystem            The file system on which this request is posted.
+     * @param fileName              The name of the file or directory to set the security descriptor for.
+     * @param securityDescriptorStr A security descriptor string
      */
-    Result setSecurity(FSP_FILE_SYSTEM fileSystem,
-                       String fileName,
-                       int securityInformation,
-                       Pointer pModificationDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */
-    );
+    void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, String securityDescriptorStr)
+            throws NTStatusException;
 
     /**
      * Read a directory. Returns a list of FileInfo.

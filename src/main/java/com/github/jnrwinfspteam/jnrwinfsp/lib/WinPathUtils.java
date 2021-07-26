@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 /**
  * Locates WinFsp installation path.
  */
-public class WinPathUtils {
+public final class WinPathUtils {
 
     /**
      * Best attempt to find the WinFsp library.
@@ -106,5 +106,9 @@ public class WinPathUtils {
             // registry might contain any kind of garbage
             return false;
         }
+    }
+
+    private WinPathUtils() {
+        // not instantiable
     }
 }

@@ -72,18 +72,12 @@ public class MainTest {
         }
 
         @Override
-        public ResultSecurityAndAttributes getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) {
-            System.out.println("=== GET SECURITY BY NAME " + fileName);
-            return new ResultSecurityAndAttributes(0, null, 0, 0);
-        }
-
-        @Override
         public FileInfo create(FSP_FILE_SYSTEM fileSystem,
                                String fileName,
                                Set<CreateOptions> createOptions,
                                int grantedAccess,
                                Set<FileAttributes> fileAttributes,
-                               Pointer pSecurityDescriptor,
+                               String securityDescriptorString,
                                long allocationSize) {
 
             System.out.println("=== CREATE " + fileName);

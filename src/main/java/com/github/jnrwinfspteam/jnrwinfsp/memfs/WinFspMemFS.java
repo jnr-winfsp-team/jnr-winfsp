@@ -224,10 +224,10 @@ public class WinFspMemFS extends WinFspStubFS {
             Path filePath = getPath(fileName);
             FileObj file = getFileObject(filePath);
 
-            if (constrainedIo)
-                return file.constrainedWrite(pBuffer, offset, length);
-            else
-                return file.write(pBuffer, offset, length, writeToEndOfFile);
+//            if (constrainedIo)
+//                return file.constrainedWrite(pBuffer, offset, length);
+//            else
+            return file.write(pBuffer, offset, length, writeToEndOfFile);
         }
     }
 

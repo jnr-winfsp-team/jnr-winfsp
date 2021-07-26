@@ -6,7 +6,6 @@ import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 

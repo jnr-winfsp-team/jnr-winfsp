@@ -151,8 +151,8 @@ final class FSHelper {
     }
 
     static void initCleanup(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
-        fsi.Cleanup.set((pFS, pFileContext, pFileName, flags) -> {
-            String fileName = StringUtils.fromPointer(pFileName);
+        fsi.Cleanup.set((pFS, pFileContext, _pFileName, flags) -> {
+            String fileName = StringUtils.fromPointer(pFileContext);
             EnumSet<CleanupFlags> cleanupFlags = CleanupFlags.setValueOf(flags);
             winfsp.cleanup(
                     fs(pFS),
@@ -203,7 +203,9 @@ final class FSHelper {
                 );
                 FileInfo fi = winfsp.getFileInfo(fs, fileName);
 
-                pBytesTransferred.putLong(0, bytesTransferred);
+                if (!(constrainedIo && bytesTransferred == 0))
+                    pBytesTransferred.putLong(0, bytesTransferred);
+
                 putFileInfo(pFileInfo, fi);
 
                 return 0;

@@ -5,28 +5,30 @@ import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 public class FileObj extends MemoryObj {
     private static final int ALLOCATION_UNIT = 4096;
 
-    private ByteBuffer data;
+    private byte[] data;
+    private int fileSize;
 
     public FileObj(Path path, String securityDescriptor) {
         super(path, securityDescriptor);
-        this.data = ByteBuffer.allocate(0).limit(0);
+        this.data = new byte[0];
+        this.fileSize = 0;
         getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_ARCHIVE);
     }
 
     @Override
     protected synchronized int getAllocationSize() {
-        return data.capacity();
+        return data.length;
     }
 
     @Override
     protected synchronized int getFileSize() {
-        return data.remaining();
+        return fileSize;
     }
 
     public synchronized void setFileSize(int fileSize) {
@@ -34,13 +36,13 @@ public class FileObj extends MemoryObj {
 
         if (fileSize < prevFileSize) {
             for (int i = fileSize; i < prevFileSize; i++) {
-                data.put(i, (byte) 0);
+                data[i] = (byte) 0;
             }
             setWriteTimes();
         } else if (fileSize > getAllocationSize())
             adaptAllocationSize(fileSize);
 
-        data.limit(fileSize);
+        this.fileSize = fileSize;
     }
 
     public synchronized void adaptAllocationSize(int fileSize) {
@@ -49,40 +51,22 @@ public class FileObj extends MemoryObj {
     }
 
     public synchronized void setAllocationSize(int newAllocationSize) {
-        final int newFileSize = Math.min(getFileSize(), newAllocationSize);
-        if (newAllocationSize < getAllocationSize()) {
-            // truncate the data buffer
-            ByteBuffer copy = ByteBuffer.allocate(newAllocationSize);
-            data.limit(newAllocationSize);
-            copy.put(data);
-            copy.rewind();
-            copy.limit(newFileSize);
-            data = copy;
-
-            setWriteTimes();
-        } else if (newAllocationSize > getAllocationSize()) {
-            // extend the data buffer
-            ByteBuffer copy = ByteBuffer.allocate(newAllocationSize);
-            copy.put(data);
-            copy.rewind();
-            copy.limit(newFileSize);
-            data = copy;
-
+        if (newAllocationSize != getAllocationSize()) {
+            // truncate or extend the data buffer
+            final int newFileSize = Math.min(getFileSize(), newAllocationSize);
+            this.data = Arrays.copyOf(data, newAllocationSize);
+            this.fileSize = newFileSize;
             setWriteTimes();
         }
     }
 
     public synchronized int read(Pointer buffer, long offsetL, int size) throws NTStatusException {
-        final int offset = Math.toIntExact(offsetL);
+        int offset = Math.toIntExact(offsetL);
         if (offset >= getFileSize())
             throw new NTStatusException(0xC0000011); // STATUS_END_OF_FILE
 
         int bytesToRead = Math.min(getFileSize() - offset, size);
-        byte[] dst = new byte[bytesToRead];
-        data.position(offset);
-        data.get(dst, 0, bytesToRead);
-        buffer.put(0, dst, 0, bytesToRead);
-        data.rewind();
+        buffer.put(0, data, offset, bytesToRead);
 
         setReadTimes();
 
@@ -90,19 +74,15 @@ public class FileObj extends MemoryObj {
     }
 
     public synchronized int write(Pointer buffer, long offsetL, int size, boolean writeToEndOfFile) {
-        int offset = Math.toIntExact(offsetL);
+        int begOffset = Math.toIntExact(offsetL);
         if (writeToEndOfFile)
-            offset = getFileSize();
+            begOffset = getFileSize();
 
-        int maxWriteIndex = Math.addExact(offset, size);
-        byte[] dst = new byte[size];
-        if (maxWriteIndex > getAllocationSize())
-            setAllocationSize(maxWriteIndex);
+        int endOffset = Math.addExact(begOffset, size);
+        if (endOffset > getFileSize())
+            setFileSize(endOffset);
 
-        buffer.get(0, dst, 0, size);
-        data.position(offset);
-        data.put(dst);
-        data.flip();
+        buffer.get(0, data, begOffset, size);
 
         setWriteTimes();
 
@@ -110,18 +90,14 @@ public class FileObj extends MemoryObj {
     }
 
     public synchronized int constrainedWrite(Pointer buffer, long offsetL, int size) {
-        final int offset = Math.toIntExact(offsetL);
-        if (offset >= getFileSize())
+        int begOffset = Math.toIntExact(offsetL);
+        if (begOffset >= getFileSize())
             return 0;
 
-        int endOffset = Math.min(getFileSize(), Math.addExact(offset, size));
-        int transferredLength = endOffset - offset;
+        int endOffset = Math.min(getFileSize(), Math.addExact(begOffset, size));
+        int transferredLength = endOffset - begOffset;
 
-        byte[] dst = new byte[transferredLength];
-        buffer.get(0, dst, 0, transferredLength);
-        data.position(offset);
-        data.put(dst);
-        data.flip();
+        buffer.get(0, data, begOffset, transferredLength);
 
         setWriteTimes();
 

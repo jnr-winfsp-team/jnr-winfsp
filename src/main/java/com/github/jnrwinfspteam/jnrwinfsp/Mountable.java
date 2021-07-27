@@ -1,7 +1,5 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_VOLUME_PARAMS;
-
 import java.nio.file.Path;
 
 public interface Mountable {

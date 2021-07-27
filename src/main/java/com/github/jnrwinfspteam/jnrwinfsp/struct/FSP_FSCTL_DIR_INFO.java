@@ -1,15 +1,10 @@
 package com.github.jnrwinfspteam.jnrwinfsp.struct;
 
-import com.github.jnrwinfspteam.jnrwinfsp.lib.StringUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.util.Pointered;
 import jnr.ffi.NativeType;
 import jnr.ffi.Runtime;
 import jnr.ffi.Struct;
 import jnr.ffi.Union;
-
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
 
 public class FSP_FSCTL_DIR_INFO extends Struct {
     public final Struct.Unsigned16 Size = new Unsigned16();

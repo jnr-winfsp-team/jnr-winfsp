@@ -110,6 +110,7 @@ public class WinFspMemFS extends WinFspStubFS {
                 obj = file;
             }
 
+            obj.getFileAttributes().addAll(fileAttributes);
             putObject(obj);
 
             return obj.generateFileInfo();

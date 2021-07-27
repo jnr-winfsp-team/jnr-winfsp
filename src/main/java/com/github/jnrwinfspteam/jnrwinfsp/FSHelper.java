@@ -71,9 +71,9 @@ final class FSHelper {
                 FileInfo fi = winfsp.create(
                         fs(pFS),
                         fileName,
-                        CreateOptions.setValueOf(createOptions),
+                        CreateOptions.setOf(createOptions),
                         grantedAccess,
-                        FileAttributes.setValueOf(fileAttributes),
+                        FileAttributes.setOf(fileAttributes),
                         securityDescriptorStr,
                         allocationSize
                 );
@@ -95,7 +95,7 @@ final class FSHelper {
                 FileInfo fi = winfsp.open(
                         fs(pFS),
                         fileName,
-                        CreateOptions.setValueOf(createOptions),
+                        CreateOptions.setOf(createOptions),
                         grantedAccess
                 );
 
@@ -116,7 +116,7 @@ final class FSHelper {
                 FileInfo fi = winfsp.overwrite(
                         fs(pFS),
                         fileName,
-                        FileAttributes.setValueOf(fileAttributes),
+                        FileAttributes.setOf(fileAttributes),
                         replaceFileAttributes,
                         allocationSize
                 );
@@ -133,7 +133,7 @@ final class FSHelper {
     static void initCleanup(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.Cleanup.set((pFS, pFileContext, _pFileName, flags) -> {
             String fileName = StringUtils.fromPointer(pFileContext);
-            EnumSet<CleanupFlags> cleanupFlags = CleanupFlags.setValueOf(flags);
+            EnumSet<CleanupFlags> cleanupFlags = CleanupFlags.setOf(flags);
             winfsp.cleanup(
                     fs(pFS),
                     fileName,
@@ -238,7 +238,7 @@ final class FSHelper {
                 FileInfo fi = winfsp.setBasicInfo(
                         fs(pFS),
                         fileName,
-                        FileAttributes.setValueOf(fileAttributes),
+                        FileAttributes.setOf(fileAttributes),
                         new WinSysTime(creationTime),
                         new WinSysTime(lastAccessTime),
                         new WinSysTime(lastWriteTime),
@@ -371,7 +371,7 @@ final class FSHelper {
                     Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
                     FSP_FSCTL_DIR_INFO di = diP.get();
                     di.Size.set(Struct.size(di)); // size already includes file name length
-                    di.FileInfo.FileAttributes.set(FileAttributes.intValueOf(fi.getFileAttributes()));
+                    di.FileInfo.FileAttributes.set(FileAttributes.intOf(fi.getFileAttributes()));
                     di.FileInfo.ReparseTag.set(fi.getReparseTag());
                     di.FileInfo.AllocationSize.set(fi.getAllocationSize());
                     di.FileInfo.FileSize.set(fi.getFileSize());
@@ -412,7 +412,7 @@ final class FSHelper {
 
     private static void putFileInfo(Pointer pFI, FileInfo fi) {
         FSP_FSCTL_FILE_INFO fiOut = FSP_FSCTL_FILE_INFO.of(pFI).get();
-        fiOut.FileAttributes.set(FileAttributes.intValueOf(fi.getFileAttributes()));
+        fiOut.FileAttributes.set(FileAttributes.intOf(fi.getFileAttributes()));
         fiOut.ReparseTag.set(fi.getReparseTag());
         fiOut.AllocationSize.set(fi.getAllocationSize());
         fiOut.FileSize.set(fi.getFileSize());

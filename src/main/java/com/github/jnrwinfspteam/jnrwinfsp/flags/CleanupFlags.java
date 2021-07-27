@@ -16,7 +16,7 @@ public enum CleanupFlags implements EnumMapper.IntegerEnum {
 
     private static final Set<CleanupFlags> ALL_VALUES = EnumSet.allOf(CleanupFlags.class);
 
-    public static int intValueOf(Set<CleanupFlags> flags) {
+    public static int intOf(Set<CleanupFlags> flags) {
         int intValue = 0;
         for (var f : flags) {
             intValue |= f.intValue();
@@ -25,10 +25,10 @@ public enum CleanupFlags implements EnumMapper.IntegerEnum {
         return intValue;
     }
 
-    public static EnumSet<CleanupFlags> setValueOf(int flags) {
+    public static EnumSet<CleanupFlags> setOf(int flags) {
         EnumSet<CleanupFlags> set = EnumSet.noneOf(CleanupFlags.class);
         for (var v : ALL_VALUES) {
-            if ((flags & v.intValue()) != 0)
+            if ((flags & v.intValue()) == v.intValue())
                 set.add(v);
         }
 

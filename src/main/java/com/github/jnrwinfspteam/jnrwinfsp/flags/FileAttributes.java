@@ -30,7 +30,7 @@ public enum FileAttributes implements EnumMapper.IntegerEnum {
 
     private static final Set<FileAttributes> ALL_VALUES = EnumSet.allOf(FileAttributes.class);
 
-    public static int intValueOf(Set<FileAttributes> attributes) {
+    public static int intOf(Set<FileAttributes> attributes) {
         int intValue = 0;
         for (var a : attributes) {
             intValue |= a.intValue();
@@ -39,10 +39,10 @@ public enum FileAttributes implements EnumMapper.IntegerEnum {
         return intValue;
     }
 
-    public static EnumSet<FileAttributes> setValueOf(int attributes) {
+    public static EnumSet<FileAttributes> setOf(int attributes) {
         EnumSet<FileAttributes> set = EnumSet.noneOf(FileAttributes.class);
         for (var v : ALL_VALUES) {
-            if ((attributes & v.intValue()) != 0)
+            if ((attributes & v.intValue()) == v.intValue())
                 set.add(v);
         }
 

@@ -26,7 +26,7 @@ public enum CreateOptions implements EnumMapper.IntegerEnum {
 
     private static final Set<CreateOptions> ALL_VALUES = EnumSet.allOf(CreateOptions.class);
 
-    public static int intValueOf(Set<CreateOptions> options) {
+    public static int intOf(Set<CreateOptions> options) {
         int intValue = 0;
         for (var o : options) {
             intValue |= o.intValue();
@@ -35,10 +35,10 @@ public enum CreateOptions implements EnumMapper.IntegerEnum {
         return intValue;
     }
 
-    public static EnumSet<CreateOptions> setValueOf(int options) {
+    public static EnumSet<CreateOptions> setOf(int options) {
         EnumSet<CreateOptions> set = EnumSet.noneOf(CreateOptions.class);
         for (var v : ALL_VALUES) {
-            if ((options & v.intValue()) != 0)
+            if ((options & v.intValue()) == v.intValue())
                 set.add(v);
         }
 

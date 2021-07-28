@@ -273,6 +273,8 @@ public class WinFspMemFS extends WinFspStubFS {
             if (lastAccessTime.get() != 0)
                 obj.setAccessTime(lastAccessTime);
             if (lastWriteTime.get() != 0)
+                obj.setWriteTime(lastWriteTime);
+            if (changeTime.get() != 0)
                 obj.setWriteTime(changeTime);
 
             return obj.generateFileInfo();
@@ -314,7 +316,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public void rename(FSP_FILE_SYSTEM fileSystem, String fileName, String newFileName, boolean replaceIfExists)
             throws NTStatusException {
 
-        verboseOut.println("=== RENAME " + fileName);
+        verboseOut.println("=== RENAME " + fileName + " -> " + newFileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             Path newFilePath = getPath(newFileName);

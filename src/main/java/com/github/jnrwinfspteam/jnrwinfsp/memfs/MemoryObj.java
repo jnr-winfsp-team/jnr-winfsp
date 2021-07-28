@@ -6,6 +6,7 @@ import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -65,7 +66,7 @@ public abstract class MemoryObj {
         res.setLastWriteTime(lastWriteTime);
         res.setChangeTime(changeTime);
         res.setIndexNumber(indexNumber);
-        res.setNormalizedName(getPath().normalize().toString());
+        res.setNormalizedName(filePath.toLowerCase(Locale.ROOT));
         return res;
     }
 

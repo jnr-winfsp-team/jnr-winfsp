@@ -147,7 +147,7 @@ final class FSHelper {
                         fs(pFS),
                         fileName,
                         FileAttributes.setOf(fileAttributes),
-                        replaceFileAttributes,
+                        bool(replaceFileAttributes),
                         allocationSize
                 );
 
@@ -208,12 +208,12 @@ final class FSHelper {
                         pBuffer,
                         offset,
                         length,
-                        writeToEndOfFile,
-                        constrainedIo
+                        bool(writeToEndOfFile),
+                        bool(constrainedIo)
                 );
                 FileInfo fi = winfsp.getFileInfo(fs, fileName);
 
-                if (!(constrainedIo && bytesTransferred == 0))
+                if (!(bool(constrainedIo) && bytesTransferred == 0))
                     pBytesTransferred.putLong(0, bytesTransferred);
 
                 putFileInfo(pFileInfo, fi);
@@ -288,7 +288,7 @@ final class FSHelper {
         fsi.SetFileSize.set((pFS, pFileContext, newSize, setAllocationSize, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileContext);
-                FileInfo res = winfsp.setFileSize(fs(pFS), fileName, newSize, setAllocationSize);
+                FileInfo res = winfsp.setFileSize(fs(pFS), fileName, newSize, bool(setAllocationSize));
 
                 putFileInfo(pFileInfo, res);
 
@@ -319,7 +319,7 @@ final class FSHelper {
                         fs(pFS),
                         StringUtils.fromPointer(pFileName),
                         StringUtils.fromPointer(pNewFileName),
-                        replaceIfExists
+                        bool(replaceIfExists)
                 );
 
                 return 0;
@@ -428,6 +428,10 @@ final class FSHelper {
 
     private static FSP_FILE_SYSTEM fs(Pointer pFS) {
         return FSP_FILE_SYSTEM.of(pFS).get();
+    }
+
+    private static boolean bool(byte val) {
+        return val != 0; // JNR conversion to boolean is not working correctly so we need to do it here
     }
 
     private static void putOpenFileInfo(Pointer pOFI, FileInfo fi) {

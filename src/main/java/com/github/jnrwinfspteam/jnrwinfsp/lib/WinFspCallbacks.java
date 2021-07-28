@@ -180,7 +180,7 @@ public final class WinFspCallbacks {
         int Overwrite(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                       Pointer /* VOID */ pFileContext,
                       @u_int32_t int fileAttributes,
-                      boolean replaceFileAttributes,
+                      byte /* BOOLEAN */ replaceFileAttributes,
                       @u_int64_t long allocationSize,
                       Pointer /* FSP_FSCTL_FILE_INFO */ pFileInfo
         );
@@ -319,8 +319,8 @@ public final class WinFspCallbacks {
                   Pointer /* VOID */ pBuffer,
                   @u_int64_t long offset,
                   @u_int32_t int length,
-                  boolean writeToEndOfFile,
-                  boolean constrainedIo,
+                  byte /* BOOLEAN */ writeToEndOfFile,
+                  byte /* BOOLEAN */ constrainedIo,
                   Pointer /* ULONG */ pBytesTransferred,
                   Pointer /* FSP_FSCTL_FILE_INFO */ pFileInfo
         );
@@ -440,7 +440,7 @@ public final class WinFspCallbacks {
         int SetFileSize(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                         Pointer /* VOID */ pFileContext,
                         @u_int64_t long newSize,
-                        boolean setAllocationSize,
+                        byte /* BOOLEAN */ setAllocationSize,
                         Pointer /* FSP_FSCTL_FILE_INFO */ pFileInfo
         );
     }
@@ -501,7 +501,7 @@ public final class WinFspCallbacks {
                    Pointer /* VOID */ pFileContext,
                    Pointer /* WSTR */ pFileName,
                    Pointer /* WSTR */ pNewFileName,
-                   boolean replaceIfExists
+                   byte /* BOOLEAN */ replaceIfExists
         );
     }
 

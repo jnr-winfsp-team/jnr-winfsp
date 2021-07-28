@@ -226,10 +226,10 @@ public class WinFspMemFS extends WinFspStubFS {
             Path filePath = getPath(fileName);
             FileObj file = getFileObject(filePath);
 
-//            if (constrainedIo)
-//                return file.constrainedWrite(pBuffer, offset, length);
-//            else
-            return file.write(pBuffer, offset, length, writeToEndOfFile);
+            if (constrainedIo)
+                return file.constrainedWrite(pBuffer, offset, length);
+            else
+                return file.write(pBuffer, offset, length, writeToEndOfFile);
         }
     }
 
@@ -391,7 +391,7 @@ public class WinFspMemFS extends WinFspStubFS {
                 entries.add(parentDir.generateFileInfo(".."));
             }
 
-            // include only direct children with relativised names
+            // include only direct children with relative names
             for (var obj : objects.values()) {
                 Path parent = obj.getPath().getParent();
                 if (parent != null

@@ -45,40 +45,42 @@ public final class StringUtils {
     /**
      * Returns a pointer containing the contents of the given string, encoded with the configured charset.
      *
-     * @param s A string
      * @return A pointer (null if the string is null)
      */
-    public static Pointer toPointer(Runtime runtime, String s) {
-        return _toString(runtime, s, false);
+    public static Pointer toPointer(Runtime runtime, String s, boolean nullTerminated) {
+        return _toPointer(runtime, s, false, nullTerminated);
     }
 
     /**
      * Returns a temporary pointer containing the contents of the given string, encoded with the configured charset.
      *
-     * @param s A string
      * @return A pointer (null if the string is null)
      */
-    public static Pointer toTemporaryPointer(Runtime runtime, String s) {
-        return _toString(runtime, s, true);
+    public static Pointer toTemporaryPointer(Runtime runtime, String s, boolean nullTerminated) {
+        return _toPointer(runtime, s, true, nullTerminated);
     }
 
-    private static Pointer _toString(Runtime runtime, String s, boolean temporaryPointer) {
+    private static Pointer _toPointer(Runtime runtime, String s, boolean temporaryPointer, boolean nullTerminated) {
         if (s == null)
             return null;
 
         try {
             byte[] bytes = getEncoder().reset().encode(CharBuffer.wrap(s)).array();
+            int finalLength = bytes.length;
+            if (nullTerminated)
+                finalLength = Math.addExact(finalLength, 1);
 
             final Pointer p;
             if (temporaryPointer) {
-                p = runtime.getMemoryManager().allocateTemporary(bytes.length + 1, true);
+                p = runtime.getMemoryManager().allocateTemporary(finalLength, true);
             } else {
-                long address = MemoryIO.getInstance().allocateMemory(bytes.length + 1, true);
-                p = Pointer.wrap(runtime, address, bytes.length + 1);
+                long address = MemoryIO.getInstance().allocateMemory(finalLength, true);
+                p = Pointer.wrap(runtime, address, finalLength);
             }
 
             p.put(0, bytes, 0, bytes.length);
-            p.putByte(bytes.length, (byte) 0);
+            if (nullTerminated)
+                p.putByte(bytes.length, (byte) 0);
 
             return p;
         } catch (CharacterCodingException cce) {
@@ -98,7 +100,6 @@ public final class StringUtils {
      * small fix to handle the case where a null terminator character is shorter than the
      * configured terminator length (2 in the case of UTF-16{LE|BE})
      *
-     * @param pStr A pointer to a string
      * @return a string (null if the pointer is null)
      */
     public static String fromPointer(Pointer pStr) {

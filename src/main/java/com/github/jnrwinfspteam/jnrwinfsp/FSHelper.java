@@ -52,6 +52,36 @@ final class FSHelper {
         });
     }
 
+    static void initGetSecurityByName(FSP_FILE_SYSTEM_INTERFACE fsi,
+                                      WinFspFS winfsp,
+                                      LibWinFsp libWinFsp,
+                                      LibKernel32 libKernel32,
+                                      LibAdvapi32 libAdvapi32
+    ) {
+        fsi.GetSecurityByName.set((pFS, pFileName, pFileAttributes, pSecurityDescriptor, pSecurityDescriptorSize) -> {
+            try {
+                String fileName = StringUtils.fromPointer(pFileName);
+
+                FileInfo fi = winfsp.getFileInfo(fs(pFS), fileName);
+                pFileAttributes.putInt(0, FileAttributes.intOf(fi.getFileAttributes()));
+
+                String securityDescriptorStr = winfsp.getSecurity(fs(pFS), fileName);
+                SecurityUtils.fromString(
+                        libWinFsp,
+                        libKernel32,
+                        libAdvapi32,
+                        securityDescriptorStr,
+                        pSecurityDescriptor,
+                        pSecurityDescriptorSize
+                );
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
+            }
+        });
+    }
+
     static void initCreate(FSP_FILE_SYSTEM_INTERFACE fsi,
                            WinFspFS winfsp,
                            LibWinFsp libWinFsp,
@@ -78,7 +108,7 @@ final class FSHelper {
                         allocationSize
                 );
 
-                putFileInfo(pFileInfo, fi);
+                putOpenFileInfo(pFileInfo, fi);
                 putFileContext(ppFileContext, fileName);
 
                 return 0;
@@ -99,7 +129,7 @@ final class FSHelper {
                         grantedAccess
                 );
 
-                putFileInfo(pFileInfo, fi);
+                putOpenFileInfo(pFileInfo, fi);
                 putFileContext(ppFileContext, fileName);
 
                 return 0;
@@ -371,17 +401,7 @@ final class FSHelper {
                     Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
                     FSP_FSCTL_DIR_INFO di = diP.get();
                     di.Size.set(Struct.size(di)); // size already includes file name length
-                    di.FileInfo.FileAttributes.set(FileAttributes.intOf(fi.getFileAttributes()));
-                    di.FileInfo.ReparseTag.set(fi.getReparseTag());
-                    di.FileInfo.AllocationSize.set(fi.getAllocationSize());
-                    di.FileInfo.FileSize.set(fi.getFileSize());
-                    di.FileInfo.CreationTime.set(fi.getCreationTime().get());
-                    di.FileInfo.LastAccessTime.set(fi.getLastAccessTime().get());
-                    di.FileInfo.LastWriteTime.set(fi.getLastWriteTime().get());
-                    di.FileInfo.ChangeTime.set(fi.getChangeTime().get());
-                    di.FileInfo.IndexNumber.set(fi.getIndexNumber());
-                    di.FileInfo.HardLinks.set(fi.getHardLinks());
-                    di.FileInfo.EaSize.set(fi.getEaSize());
+                    _putFileInfo(di.FileInfo, fi);
                     di.setFileName(fileNameBytes);
 
                     boolean added = libWinFsp.FspFileSystemAddDirInfo(
@@ -410,8 +430,20 @@ final class FSHelper {
         return FSP_FILE_SYSTEM.of(pFS).get();
     }
 
+    private static void putOpenFileInfo(Pointer pOFI, FileInfo fi) {
+        FSP_FSCTL_OPEN_FILE_INFO ofiOut = FSP_FSCTL_OPEN_FILE_INFO.of(pOFI).get();
+        _putFileInfo(ofiOut.FileInfo, fi);
+        Pointer namePointer = StringUtils.toPointer(pOFI.getRuntime(), fi.getNormalizedName(), true);
+        ofiOut.NormalizedName.get().transferFrom(0, namePointer, 0, namePointer.size());
+        ofiOut.NormalizedNameSize.set(namePointer.size());
+    }
+
     private static void putFileInfo(Pointer pFI, FileInfo fi) {
         FSP_FSCTL_FILE_INFO fiOut = FSP_FSCTL_FILE_INFO.of(pFI).get();
+        _putFileInfo(fiOut, fi);
+    }
+
+    private static void _putFileInfo(FSP_FSCTL_FILE_INFO fiOut, FileInfo fi) {
         fiOut.FileAttributes.set(FileAttributes.intOf(fi.getFileAttributes()));
         fiOut.ReparseTag.set(fi.getReparseTag());
         fiOut.AllocationSize.set(fi.getAllocationSize());
@@ -426,7 +458,7 @@ final class FSHelper {
     }
 
     private static void putFileContext(Pointer ppFileContext, String fileName) {
-        Pointer p = StringUtils.toPointer(Runtime.getSystemRuntime(), fileName);
+        Pointer p = StringUtils.toPointer(Runtime.getSystemRuntime(), fileName, true);
         ppFileContext.putPointer(0, p);
     }
 }

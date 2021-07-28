@@ -65,6 +65,7 @@ public abstract class MemoryObj {
         res.setLastWriteTime(lastWriteTime);
         res.setChangeTime(changeTime);
         res.setIndexNumber(indexNumber);
+        res.setNormalizedName(getPath().normalize().toString());
         return res;
     }
 

@@ -20,6 +20,7 @@ public class FileInfo {
     private long indexNumber;
     private final int hardLinks = 0; /* unimplemented: set to 0 */
     private int eaSize;
+    private String normalizedName;
 
     public FileInfo(String fileName) {
         this.fileName = Objects.requireNonNull(fileName);
@@ -113,5 +114,13 @@ public class FileInfo {
 
     public final void setEaSize(int eaSize) {
         this.eaSize = eaSize;
+    }
+
+    public String getNormalizedName() {
+        return normalizedName;
+    }
+
+    public void setNormalizedName(String normalizedName) {
+        this.normalizedName = Objects.requireNonNull(normalizedName);
     }
 }

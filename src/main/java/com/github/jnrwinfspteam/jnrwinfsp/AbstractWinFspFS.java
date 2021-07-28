@@ -155,6 +155,8 @@ public abstract class AbstractWinFspFS implements WinFspFS {
             FSHelper.initGetVolumeInfo(fsi, this);
         if (isImplemented("setVolumeLabel"))
             FSHelper.initSetVolumeLabel(fsi, this);
+        if (isImplemented("getSecurity") && isImplemented("getFileInfo"))
+            FSHelper.initGetSecurityByName(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
         if (isImplemented("create"))
             FSHelper.initCreate(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
         if (isImplemented("open"))
@@ -167,9 +169,9 @@ public abstract class AbstractWinFspFS implements WinFspFS {
             FSHelper.initClose(fsi, this);
         if (isImplemented("read"))
             FSHelper.initRead(fsi, this);
-        if (isImplemented("write"))
+        if (isImplemented("write") && isImplemented("getFileInfo"))
             FSHelper.initWrite(fsi, this);
-        if (isImplemented("flush"))
+        if (isImplemented("flush") && isImplemented("getFileInfo"))
             FSHelper.initFlush(fsi, this);
         if (isImplemented("getFileInfo"))
             FSHelper.initGetFileInfo(fsi, this);
@@ -183,7 +185,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
             FSHelper.initRename(fsi, this);
         if (isImplemented("getSecurity"))
             FSHelper.initGetSecurity(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
-        if (isImplemented("setSecurity"))
+        if (isImplemented("setSecurity") && isImplemented("getSecurity"))
             FSHelper.initSetSecurity(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
         if (isImplemented("readDirectory"))
             FSHelper.initReadDirectory(fsi, this, this.libWinFsp);

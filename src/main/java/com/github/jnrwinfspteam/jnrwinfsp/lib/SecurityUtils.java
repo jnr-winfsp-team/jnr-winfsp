@@ -52,7 +52,7 @@ public final class SecurityUtils {
         Runtime runtime = Runtime.getSystemRuntime();
 
         // Put the security descriptor string in a temporary pointer
-        Pointer pStringSecurityDescriptor = StringUtils.toTemporaryPointer(runtime, securityDescriptorStr);
+        Pointer pStringSecurityDescriptor = StringUtils.toTemporaryPointer(runtime, securityDescriptorStr, true);
 
         // Prepare a pointer to a pointer in order to store the converted security descriptor
         PointerByReference ppSD = new PointerByReference();
@@ -104,7 +104,7 @@ public final class SecurityUtils {
         Runtime runtime = Runtime.getSystemRuntime();
 
         // Put the security descriptor string in a temporary pointer
-        Pointer pStringSecurityDescriptor = StringUtils.toTemporaryPointer(runtime, securityDescriptorStr);
+        Pointer pStringSecurityDescriptor = StringUtils.toTemporaryPointer(runtime, securityDescriptorStr, true);
 
         // Prepare a pointer to a pointer in order to store the converted security descriptor
         PointerByReference ppSD = new PointerByReference();

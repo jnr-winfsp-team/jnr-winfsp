@@ -22,28 +22,6 @@ public class FSP_FSCTL_FILE_INFO extends Struct {
         return Pointered.wrap(new FSP_FSCTL_FILE_INFO(Runtime.getSystemRuntime()), pointer);
     }
 
-    public static Pointered<FSP_FSCTL_FILE_INFO> create() {
-        var fi = new FSP_FSCTL_FILE_INFO(Runtime.getSystemRuntime());
-
-        // allocate the necessary memory for the struct
-        Pointered<FSP_FSCTL_FILE_INFO> fiP = Pointered.allocate(fi);
-
-        // initialise every member to zero
-        fi.FileAttributes.set(0);
-        fi.ReparseTag.set(0);
-        fi.AllocationSize.set(0);
-        fi.FileSize.set(0);
-        fi.CreationTime.set(0);
-        fi.LastAccessTime.set(0);
-        fi.LastWriteTime.set(0);
-        fi.ChangeTime.set(0);
-        fi.IndexNumber.set(0);
-        fi.HardLinks.set(0);
-        fi.EaSize.set(0);
-
-        return fiP;
-    }
-
     FSP_FSCTL_FILE_INFO(Runtime runtime) {
         super(runtime);
     }

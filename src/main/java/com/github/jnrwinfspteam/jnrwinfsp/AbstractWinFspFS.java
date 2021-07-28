@@ -136,7 +136,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.VolumeCreationTime.set(WinSysTime.now().get());
         vp.VolumeSerialNumber.set(0);
         vp.FileInfoTimeout.set(1000);
-        vp.setFileSystemAttribute(FSAttr.CaseSensitiveSearch, false);
+        vp.setFileSystemAttribute(FSAttr.CaseSensitiveSearch, true);
         vp.setFileSystemAttribute(FSAttr.CasePreservedNames, true);
         vp.setFileSystemAttribute(FSAttr.UnicodeOnDisk, true);
         vp.setFileSystemAttribute(FSAttr.PersistentAcls, true);

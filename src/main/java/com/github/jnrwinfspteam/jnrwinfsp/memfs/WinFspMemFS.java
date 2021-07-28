@@ -378,7 +378,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem, String fileName, String pattern, String marker)
             throws NTStatusException {
 
-        verboseOut.println("=== READ DIRECTORY " + fileName);
+        verboseOut.println("=== READ DIRECTORY " + fileName + " pattern=" + pattern + " marker=" + marker);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             DirObj dir = getDirObject(filePath);

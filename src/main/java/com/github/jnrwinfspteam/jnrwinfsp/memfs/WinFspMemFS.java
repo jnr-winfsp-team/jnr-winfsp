@@ -313,25 +313,25 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void rename(FSP_FILE_SYSTEM fileSystem, String fileName, String newFileName, boolean replaceIfExists)
+    public void rename(FSP_FILE_SYSTEM fileSystem, String oldFileName, String newFileName, boolean replaceIfExists)
             throws NTStatusException {
 
-        verboseOut.println("=== RENAME " + fileName + " -> " + newFileName);
+        verboseOut.println("=== RENAME " + oldFileName + " -> " + newFileName);
         synchronized (objects) {
-            Path filePath = getPath(fileName);
+            Path oldFilePath = getPath(oldFileName);
             Path newFilePath = getPath(newFileName);
 
-            MemoryObj memObj = getObject(filePath);
+            MemoryObj oldMemObj = getObject(oldFilePath);
             // Handle existing new file/directory scenario
             if (hasObject(newFilePath)) {
-                // case-sensitive comparison
+                // case-sensitive comparison of base names
                 if (Objects.equals(
-                        Objects.toString(Path.of(newFileName).normalize().getFileName(), null),
-                        memObj.getName())
+                        getObject(newFilePath).getName(),
+                        Objects.toString(Path.of(newFileName).normalize().getFileName(), null))
                 ) {
                     if (!replaceIfExists)
                         throw new NTStatusException(0xC0000035); // STATUS_OBJECT_NAME_COLLISION
-                    else if (memObj instanceof DirObj)
+                    else if (oldMemObj instanceof DirObj)
                         // a directory cannot be renamed to one that already exists
                         throw new NTStatusException(0xC0000022); // STATUS_ACCESS_DENIED
                 }
@@ -339,8 +339,8 @@ public class WinFspMemFS extends WinFspStubFS {
 
             // Rename file or directory (and all existing children)
             for (var obj : List.copyOf(objects.values())) {
-                if (obj.getPath().startsWith(filePath)) {
-                    Path relativePath = obj.getPath().relativize(filePath);
+                if (obj.getPath().startsWith(oldFilePath)) {
+                    Path relativePath = oldFilePath.relativize(obj.getPath());
                     Path newObjPath = newFilePath.resolve(relativePath);
                     MemoryObj newObj = removeObject(obj.getPath());
                     newObj.setPath(newObjPath);

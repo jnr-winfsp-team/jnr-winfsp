@@ -109,7 +109,7 @@ final class FSHelper {
                 );
 
                 putOpenFileInfo(pFileInfo, fi);
-                putFileContext(ppFileContext, fileName);
+                putFileContext(ppFileContext, fi.getFileName());
 
                 return 0;
             } catch (NTStatusException e) {
@@ -130,7 +130,7 @@ final class FSHelper {
                 );
 
                 putOpenFileInfo(pFileInfo, fi);
-                putFileContext(ppFileContext, fileName);
+                putFileContext(ppFileContext, fi.getFileName());
 
                 return 0;
             } catch (NTStatusException e) {

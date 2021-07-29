@@ -28,6 +28,14 @@ public interface WinFspFS extends Mountable {
     VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) throws NTStatusException;
 
     /**
+     * Get file or directory security descriptor string, and file attributes.
+     *
+     * @param fileSystem The file system on which this request is posted.
+     * @param fileName   The name of the file or directory to get the security descriptor and attributes for.
+     */
+    SecurityResult getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+
+    /**
      * Create new file or directory.
      *
      * @param fileSystem               The file system on which this request is posted.
@@ -180,7 +188,7 @@ public interface WinFspFS extends Mountable {
      *                         parameter will contain the value -1.
      * @param constrainedIo    When TRUE the file system must not extend the file (i.e. change the file size).
      */
-    long write(FSP_FILE_SYSTEM fileSystem,
+    WriteResult write(FSP_FILE_SYSTEM fileSystem,
                String fileName,
                Pointer pBuffer,
                long offset,
@@ -197,7 +205,7 @@ public interface WinFspFS extends Mountable {
      * @param fileSystem The file system on which this request is posted.
      * @param fileName   The name of the file to be flushed. When NULL the whole volume is being flushed.
      */
-    void flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    FileInfo flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
 
     /**
      * Get file or directory information.

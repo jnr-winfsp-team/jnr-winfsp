@@ -7,7 +7,9 @@ import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.result.FileInfo;
+import com.github.jnrwinfspteam.jnrwinfsp.result.SecurityResult;
 import com.github.jnrwinfspteam.jnrwinfsp.result.VolumeInfo;
+import com.github.jnrwinfspteam.jnrwinfsp.result.WriteResult;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
 import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
@@ -79,6 +81,17 @@ public class WinFspMemFS extends WinFspStubFS {
         verboseOut.println("=== SET VOLUME LABEL");
         this.volumeLabel = volumeLabel;
         return generateVolumeInfo();
+    }
+
+    @Override
+    public SecurityResult getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+        verboseOut.println("=== GET SECURITY BY NAME " + fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            MemoryObj obj = getObject(filePath);
+
+            return new SecurityResult(obj.getSecurityDescriptor(), obj.generateFileInfo());
+        }
     }
 
     @Override
@@ -213,29 +226,41 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public long write(FSP_FILE_SYSTEM fileSystem,
-                      String fileName,
-                      Pointer pBuffer,
-                      long offset,
-                      int length,
-                      boolean writeToEndOfFile,
-                      boolean constrainedIo) throws NTStatusException {
+    public WriteResult write(FSP_FILE_SYSTEM fileSystem,
+                             String fileName,
+                             Pointer pBuffer,
+                             long offset,
+                             int length,
+                             boolean writeToEndOfFile,
+                             boolean constrainedIo) throws NTStatusException {
 
         verboseOut.println("=== WRITE " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             FileObj file = getFileObject(filePath);
 
+            final long bytesTransferred;
             if (constrainedIo)
-                return file.constrainedWrite(pBuffer, offset, length);
+                bytesTransferred = file.constrainedWrite(pBuffer, offset, length);
             else
-                return file.write(pBuffer, offset, length, writeToEndOfFile);
+                bytesTransferred = file.write(pBuffer, offset, length, writeToEndOfFile);
+
+            return new WriteResult(bytesTransferred, file.generateFileInfo());
         }
     }
 
     @Override
-    public void flush(FSP_FILE_SYSTEM fileSystem, String fileName) {
+    public FileInfo flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
         verboseOut.println("=== FLUSH " + fileName);
+        synchronized (objects) {
+            if (fileName == null)
+                return null; // whole volume is being flushed
+
+            Path filePath = getPath(fileName);
+            MemoryObj obj = getObject(filePath);
+
+            return obj.generateFileInfo();
+        }
     }
 
     @Override

@@ -31,6 +31,12 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
+    public SecurityResult getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+        return null;
+    }
+
+    @Override
+    @NotImplemented
     public FileInfo create(FSP_FILE_SYSTEM fileSystem,
                            String fileName,
                            Set<CreateOptions> createOptions,
@@ -84,20 +90,20 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public long write(FSP_FILE_SYSTEM fileSystem,
+    public WriteResult write(FSP_FILE_SYSTEM fileSystem,
                       String fileName,
                       Pointer pBuffer,
                       long offset,
                       int length,
                       boolean writeToEndOfFile,
                       boolean constrainedIo) throws NTStatusException {
-        return 0;
+        return null;
     }
 
     @Override
     @NotImplemented
-    public void flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
-
+    public FileInfo flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+        return null;
     }
 
     @Override

@@ -61,16 +61,14 @@ final class FSHelper {
         fsi.GetSecurityByName.set((pFS, pFileName, pFileAttributes, pSecurityDescriptor, pSecurityDescriptorSize) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
+                SecurityResult res = winfsp.getSecurityByName(fs(pFS), fileName);
 
-                FileInfo fi = winfsp.getFileInfo(fs(pFS), fileName);
-                pFileAttributes.putInt(0, FileAttributes.intOf(fi.getFileAttributes()));
-
-                String securityDescriptorStr = winfsp.getSecurity(fs(pFS), fileName);
+                pFileAttributes.putInt(0, FileAttributes.intOf(res.getFileInfo().getFileAttributes()));
                 SecurityUtils.fromString(
                         libWinFsp,
                         libKernel32,
                         libAdvapi32,
-                        securityDescriptorStr,
+                        res.getSecurityDescriptor(),
                         pSecurityDescriptor,
                         pSecurityDescriptorSize
                 );
@@ -200,10 +198,9 @@ final class FSHelper {
         fsi.Write.set((pFS, pFileContext, pBuffer, offset, length, writeToEndOfFile, constrainedIo,
                        pBytesTransferred, pFileInfo) -> {
             try {
-                FSP_FILE_SYSTEM fs = fs(pFS);
                 String fileName = StringUtils.fromPointer(pFileContext);
-                long bytesTransferred = winfsp.write(
-                        fs,
+                WriteResult res = winfsp.write(
+                        fs(pFS),
                         fileName,
                         pBuffer,
                         offset,
@@ -211,12 +208,11 @@ final class FSHelper {
                         bool(writeToEndOfFile),
                         bool(constrainedIo)
                 );
-                FileInfo fi = winfsp.getFileInfo(fs, fileName);
 
-                if (!(bool(constrainedIo) && bytesTransferred == 0))
-                    pBytesTransferred.putLong(0, bytesTransferred);
+                if (!(bool(constrainedIo) && res.getBytesTransferred() == 0))
+                    pBytesTransferred.putLong(0, res.getBytesTransferred());
 
-                putFileInfo(pFileInfo, fi);
+                putFileInfo(pFileInfo, res.getFileInfo());
 
                 return 0;
             } catch (NTStatusException e) {
@@ -231,10 +227,9 @@ final class FSHelper {
             try {
                 FSP_FILE_SYSTEM fs = fs(pFS);
                 String fileName = StringUtils.fromPointer(pFileContext);
-                winfsp.flush(fs, fileName);
+                FileInfo fi = winfsp.flush(fs, fileName);
 
-                if (fileName != null) {
-                    FileInfo fi = winfsp.getFileInfo(fs, fileName);
+                if (fileName != null && fi != null) {
                     putFileInfo(pFileInfo, fi);
                 }
 

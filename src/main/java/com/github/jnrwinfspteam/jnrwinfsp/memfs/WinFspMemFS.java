@@ -304,7 +304,7 @@ public class WinFspMemFS extends WinFspStubFS {
             if (lastWriteTime.get() != 0)
                 obj.setWriteTime(lastWriteTime);
             if (changeTime.get() != 0)
-                obj.setWriteTime(changeTime);
+                obj.setChangeTime(changeTime);
 
             return obj.generateFileInfo();
         }

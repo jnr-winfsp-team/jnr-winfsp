@@ -4,6 +4,7 @@ import jnr.ffi.Pointer;
 import jnr.ffi.annotations.Out;
 import jnr.ffi.byref.PointerByReference;
 import jnr.ffi.types.u_int32_t;
+import jnr.ffi.types.u_int8_t;
 
 public interface LibWinFsp {
 
@@ -157,7 +158,8 @@ public interface LibWinFsp {
      *                          buffer has been used so far.
      * @return TRUE if the directory information was added, FALSE if there was not enough space to add it.
      */
-    boolean FspFileSystemAddDirInfo(
+    @u_int8_t
+    byte FspFileSystemAddDirInfo(
             Pointer /* FSP_FSCTL_DIR_INFO */ dirInfo,
             Pointer /* VOID */ buffer,
             @u_int32_t int length,

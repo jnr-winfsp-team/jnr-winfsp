@@ -35,6 +35,9 @@ public class WinFspMemFS extends WinFspStubFS {
         try {
             System.out.println("<Press Enter to quit>");
             new BufferedReader(new InputStreamReader(System.in)).readLine();
+//            memFS.objects.keySet().stream()
+//                    .sorted(NATURAL_ORDER)
+//                    .forEachOrdered(System.out::println);
         } finally {
             System.out.printf("Unmounting %s...%n", mountPoint == null ? "" : mountPoint);
             memFS.unmountLocalDrive();
@@ -44,6 +47,7 @@ public class WinFspMemFS extends WinFspStubFS {
 
 
     private static final String SECURITY_DESCRIPTOR = "O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;FA;;;WD)";
+    private static final Comparator<String> NATURAL_ORDER = new NaturalOrderComparator();
     private static final long MAX_FILE_NODES = 1024;
     private static final long MAX_FILE_SIZE = 16 * 1024 * 1024;
 
@@ -71,21 +75,21 @@ public class WinFspMemFS extends WinFspStubFS {
     @Override
     public VolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) {
 
-        verboseOut.println("=== GET VOLUME INFO");
+        verboseOut.println("== GET VOLUME INFO ==");
         return generateVolumeInfo();
     }
 
     @Override
     public VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) {
 
-        verboseOut.println("=== SET VOLUME LABEL");
+        verboseOut.println("== SET VOLUME LABEL == " + volumeLabel);
         this.volumeLabel = volumeLabel;
         return generateVolumeInfo();
     }
 
     @Override
     public SecurityResult getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
-        verboseOut.println("=== GET SECURITY BY NAME " + fileName);
+        verboseOut.println("== GET SECURITY BY NAME == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj obj = getObject(filePath);
@@ -103,7 +107,7 @@ public class WinFspMemFS extends WinFspStubFS {
                            String securityDescriptorString,
                            long allocationSize) throws NTStatusException {
 
-        verboseOut.println("=== CREATE " + fileName);
+        verboseOut.println("== CREATE == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
 
@@ -136,7 +140,7 @@ public class WinFspMemFS extends WinFspStubFS {
                          Set<CreateOptions> createOptions,
                          int grantedAccess) throws NTStatusException {
 
-        verboseOut.println("=== OPEN " + fileName);
+        verboseOut.println("== OPEN == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj obj = getObject(filePath);
@@ -152,7 +156,7 @@ public class WinFspMemFS extends WinFspStubFS {
                               boolean replaceFileAttributes,
                               long allocationSize) throws NTStatusException {
 
-        verboseOut.println("=== OVERWRITE " + fileName);
+        verboseOut.println("== OVERWRITE == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             FileObj file = getFileObject(filePath);
@@ -171,7 +175,7 @@ public class WinFspMemFS extends WinFspStubFS {
     @Override
     public void cleanup(FSP_FILE_SYSTEM fileSystem, String fileName, Set<CleanupFlags> flags) {
 
-        verboseOut.println("=== CLEANUP " + fileName);
+        verboseOut.println("== CLEANUP == " + fileName);
         try {
             synchronized (objects) {
                 Path filePath = getPath(fileName);
@@ -206,7 +210,7 @@ public class WinFspMemFS extends WinFspStubFS {
 
     @Override
     public void close(FSP_FILE_SYSTEM fileSystem, String fileName) {
-        verboseOut.println("=== CLOSE " + fileName);
+        verboseOut.println("== CLOSE == " + fileName);
     }
 
     @Override
@@ -216,7 +220,7 @@ public class WinFspMemFS extends WinFspStubFS {
                      long offset,
                      int length) throws NTStatusException {
 
-        verboseOut.println("=== READ " + fileName);
+        verboseOut.println("== READ == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             FileObj file = getFileObject(filePath);
@@ -234,7 +238,7 @@ public class WinFspMemFS extends WinFspStubFS {
                              boolean writeToEndOfFile,
                              boolean constrainedIo) throws NTStatusException {
 
-        verboseOut.println("=== WRITE " + fileName);
+        verboseOut.println("== WRITE == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             FileObj file = getFileObject(filePath);
@@ -251,7 +255,7 @@ public class WinFspMemFS extends WinFspStubFS {
 
     @Override
     public FileInfo flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
-        verboseOut.println("=== FLUSH " + fileName);
+        verboseOut.println("== FLUSH == " + fileName);
         synchronized (objects) {
             if (fileName == null)
                 return null; // whole volume is being flushed
@@ -266,7 +270,7 @@ public class WinFspMemFS extends WinFspStubFS {
     @Override
     public FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
 
-        verboseOut.println("=== GET FILE INFO " + fileName);
+        verboseOut.println("== GET FILE INFO == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj obj = getObject(filePath);
@@ -284,7 +288,7 @@ public class WinFspMemFS extends WinFspStubFS {
                                  WinSysTime lastWriteTime,
                                  WinSysTime changeTime) throws NTStatusException {
 
-        verboseOut.println("=== SET BASIC INFO " + fileName);
+        verboseOut.println("== SET BASIC INFO == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj obj = getObject(filePath);
@@ -310,7 +314,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public FileInfo setFileSize(FSP_FILE_SYSTEM fileSystem, String fileName, long newSize, boolean setAllocationSize)
             throws NTStatusException {
 
-        verboseOut.println("=== SET FILE SIZE " + fileName);
+        verboseOut.println("== SET FILE SIZE == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             FileObj file = getFileObject(filePath);
@@ -327,7 +331,7 @@ public class WinFspMemFS extends WinFspStubFS {
     @Override
     public void canDelete(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
 
-        verboseOut.println("=== CAN DELETE " + fileName);
+        verboseOut.println("== CAN DELETE == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj memObj = getObject(filePath);
@@ -341,7 +345,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public void rename(FSP_FILE_SYSTEM fileSystem, String oldFileName, String newFileName, boolean replaceIfExists)
             throws NTStatusException {
 
-        verboseOut.println("=== RENAME " + oldFileName + " -> " + newFileName);
+        verboseOut.println("== RENAME == " + oldFileName + " -> " + newFileName);
         synchronized (objects) {
             Path oldFilePath = getPath(oldFileName);
             Path newFilePath = getPath(newFileName);
@@ -378,7 +382,7 @@ public class WinFspMemFS extends WinFspStubFS {
     @Override
     public String getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
 
-        verboseOut.println("=== GET SECURITY " + fileName);
+        verboseOut.println("== GET SECURITY == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj memObj = getObject(filePath);
@@ -391,7 +395,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, String securityDescriptorStr)
             throws NTStatusException {
 
-        verboseOut.println("=== SET SECURITY " + fileName);
+        verboseOut.println("== SET SECURITY == " + fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj memObj = getObject(filePath);
@@ -403,7 +407,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem, String fileName, String pattern, String marker)
             throws NTStatusException {
 
-        verboseOut.println("=== READ DIRECTORY " + fileName + " pattern=" + pattern + " marker=" + marker);
+        verboseOut.println("== READ DIRECTORY == " + fileName + " pattern=" + pattern + " marker=" + marker);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             DirObj dir = getDirObject(filePath);
@@ -411,9 +415,13 @@ public class WinFspMemFS extends WinFspStubFS {
 
             // only add the "." and ".." entries if the directory is not root
             if (!dir.getPath().equals(rootPath)) {
-                DirObj parentDir = getDirObject(filePath.getParent());
-                entries.add(dir.generateFileInfo("."));
-                entries.add(parentDir.generateFileInfo(".."));
+                // handle marker special cases (??)
+                if (marker == null)
+                    entries.add(dir.generateFileInfo("."));
+                if (marker == null || marker.equals(".")) {
+                    DirObj parentDir = getDirObject(filePath.getParent());
+                    entries.add(parentDir.generateFileInfo(".."));
+                }
             }
 
             // include only direct children with relative names
@@ -426,17 +434,33 @@ public class WinFspMemFS extends WinFspStubFS {
                 }
             }
 
-            // sort the entries by file name
-            entries.sort(Comparator.comparing(FileInfo::getFileName));
+            // sort the entries by file name in a natural order (1, 2, 10, 20, 100, etc.)
+            entries.sort(Comparator.comparing(FileInfo::getFileName, NATURAL_ORDER));
 
             // filter out all results before the marker, if it's set
             if (marker != null) {
                 return entries.stream()
-                        .dropWhile(e -> e.getFileName().compareTo(marker) <= 0)
+                        .dropWhile(e -> NATURAL_ORDER.compare(e.getFileName(), marker) <= 0)
                         .collect(Collectors.toList());
             }
 
             return entries;
+        }
+    }
+
+    @Override
+    public FileInfo getDirInfoByName(FSP_FILE_SYSTEM fileSystem, String parentDirName, String fileName)
+            throws NTStatusException {
+
+        verboseOut.println("== GET DIR INFO BY NAME == " + fileName + " parent=" + parentDirName);
+        synchronized (objects) {
+            Path parentDirPath = getPath(parentDirName);
+            getDirObject(parentDirPath); // ensure parent directory exists
+
+            Path filePath = parentDirPath.resolve(fileName).normalize();
+            MemoryObj memObj = getObject(filePath);
+
+            return memObj.generateFileInfo(memObj.getName());
         }
     }
 

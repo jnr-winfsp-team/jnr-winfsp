@@ -21,11 +21,19 @@ public class FSP_FSCTL_DIR_INFO extends Struct {
         }
     }
 
-    public static Pointered<FSP_FSCTL_DIR_INFO> create(int fileNameSize) {
+    public static Pointered<FSP_FSCTL_DIR_INFO> of(jnr.ffi.Pointer pointer, int fileNameSize) {
+        return Pointered.wrap(new FSP_FSCTL_DIR_INFO(Runtime.getSystemRuntime(), fileNameSize), pointer);
+    }
+
+    public static Pointered<FSP_FSCTL_DIR_INFO> create(int fileNameSize, boolean temporary) {
         var di = new FSP_FSCTL_DIR_INFO(Runtime.getSystemRuntime(), fileNameSize);
 
         // allocate the necessary memory for the struct
-        Pointered<FSP_FSCTL_DIR_INFO> diP = Pointered.allocate(di);
+        final Pointered<FSP_FSCTL_DIR_INFO> diP;
+        if (temporary)
+            diP = Pointered.allocateTemporary(di);
+        else
+            diP = Pointered.allocate(di);
 
         // initialise every member to zero
         di.Size.set(0);

@@ -66,11 +66,23 @@ public class FSP_FILE_SYSTEM_INTERFACE extends Struct {
 
     {
         // NOTE: this ensures that the interface struct is correctly defined.
-        // Starting index must be equal to number of functions defined above.
-        // Ending index must be 63 (struct has 64 entries).
-        for (int i = 19; i < 64; i++) {
+        // A stand-in for 5 unsupported operations.
+        for (int i = 0; i < 5; i++) {
             // actual function is irrelevant here, we just need the function pointers
             function(WinFspCallbacks.ReadDirectoryCallback.class);
+        }
+    }
+
+    public final Struct.Function<WinFspCallbacks.GetDirInfoByNameCallback> GetDirInfoByName =
+            function(WinFspCallbacks.GetDirInfoByNameCallback.class);
+
+    {
+        // NOTE: this ensures that the interface struct is correctly defined.
+        // Starting index must be equal to number of functions defined above.
+        // Ending index must be 63 (struct has 64 entries).
+        for (int i = 25; i < 64; i++) {
+            // actual function is irrelevant here, we just need the function pointers
+            function(WinFspCallbacks.GetDirInfoByNameCallback.class);
         }
     }
 

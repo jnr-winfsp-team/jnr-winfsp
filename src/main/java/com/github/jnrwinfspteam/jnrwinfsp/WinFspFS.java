@@ -189,12 +189,12 @@ public interface WinFspFS extends Mountable {
      * @param constrainedIo    When TRUE the file system must not extend the file (i.e. change the file size).
      */
     WriteResult write(FSP_FILE_SYSTEM fileSystem,
-               String fileName,
-               Pointer pBuffer,
-               long offset,
-               int length,
-               boolean writeToEndOfFile,
-               boolean constrainedIo
+                      String fileName,
+                      Pointer pBuffer,
+                      long offset,
+                      int length,
+                      boolean writeToEndOfFile,
+                      boolean constrainedIo
     ) throws NTStatusException;
 
     /**
@@ -340,5 +340,16 @@ public interface WinFspFS extends Mountable {
      *                   by the file system) should be returned. Can be NULL.
      */
     List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem, String fileName, String pattern, String marker)
+            throws NTStatusException;
+
+    /**
+     * Get directory information for a single file or directory within a parent directory.
+     *
+     * @param fileSystem    The file system on which this request is posted.
+     * @param parentDirName The name of the parent directory.
+     * @param fileName      The name of the file or directory to get information for. This name is relative
+     *                      to the parent directory and is a single path component.
+     */
+    FileInfo getDirInfoByName(FSP_FILE_SYSTEM fileSystem, String parentDirName, String fileName)
             throws NTStatusException;
 }

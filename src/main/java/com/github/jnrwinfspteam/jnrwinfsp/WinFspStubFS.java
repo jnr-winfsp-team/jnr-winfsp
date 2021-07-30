@@ -91,12 +91,12 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public WriteResult write(FSP_FILE_SYSTEM fileSystem,
-                      String fileName,
-                      Pointer pBuffer,
-                      long offset,
-                      int length,
-                      boolean writeToEndOfFile,
-                      boolean constrainedIo) throws NTStatusException {
+                             String fileName,
+                             Pointer pBuffer,
+                             long offset,
+                             int length,
+                             boolean writeToEndOfFile,
+                             boolean constrainedIo) throws NTStatusException {
         return null;
     }
 
@@ -167,6 +167,13 @@ public class WinFspStubFS extends AbstractWinFspFS {
                                         String fileName,
                                         String pattern,
                                         String marker) throws NTStatusException {
+        return null;
+    }
+
+    @Override
+    @NotImplemented
+    public FileInfo getDirInfoByName(FSP_FILE_SYSTEM fileSystem, String parentDirName, String fileName)
+            throws NTStatusException {
         return null;
     }
 }

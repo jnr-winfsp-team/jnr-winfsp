@@ -585,6 +585,29 @@ public final class WinFspCallbacks {
         );
     }
 
+    @FunctionalInterface
+    public interface GetDirInfoByNameCallback {
+        /**
+         * Get directory information for a single file or directory within a parent directory.
+         *
+         * @param pFileSystem  The file system on which this request is posted.
+         * @param pFileContext The file context of the parent directory.
+         * @param pFileName    The name of the file or directory to get information for. This name is relative
+         *                     to the parent directory and is a single path component.
+         * @param pDirInfo     [out]
+         *                     Pointer to a structure that will receive the directory information on successful
+         *                     return from this call. This information includes the file name, but also file
+         *                     attributes, file times, etc.
+         * @return STATUS_SUCCESS or error code.
+         */
+        @Delegate
+        @u_int32_t
+        int GetDirInfoByName(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
+                             Pointer /* VOID */ pFileContext,
+                             Pointer /* WSTR */ pFileName,
+                             Pointer /* FSP_FSCTL_DIR_INFO */ pDirInfo);
+    }
+
     private WinFspCallbacks() {
         // not instantiable
     }

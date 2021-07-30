@@ -19,6 +19,16 @@ public class Pointered<T extends Struct> {
         return new Pointered<>(obj, pointer);
     }
 
+    /*
+     * NOTE: memory must not be freed manually
+     */
+    public static <T extends Struct> Pointered<T> allocateTemporary(T obj) {
+        Pointer pointer = obj.getRuntime().getMemoryManager().allocateTemporary(Struct.size(obj), true);
+        obj.useMemory(pointer);
+
+        return new Pointered<>(obj, pointer);
+    }
+
     private final T obj;
     private final Pointer pointer;
 

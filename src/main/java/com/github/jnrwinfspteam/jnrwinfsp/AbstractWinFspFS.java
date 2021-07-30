@@ -142,6 +142,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.setFileSystemAttribute(FSAttr.PersistentAcls, true);
         vp.setFileSystemAttribute(FSAttr.PostCleanupWhenModifiedOnly, true);
         vp.setFileSystemAttribute(FSAttr.PassQueryDirectoryPattern, true);
+        vp.setFileSystemAttribute(FSAttr.PassQueryDirectoryFileName, true);
         vp.setFileSystemAttribute(FSAttr.FlushAndPurgeOnCleanup, true);
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsUserContext2, true);
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsFullContext, false);
@@ -189,6 +190,8 @@ public abstract class AbstractWinFspFS implements WinFspFS {
             FSHelper.initSetSecurity(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
         if (isImplemented("readDirectory"))
             FSHelper.initReadDirectory(fsi, this, this.libWinFsp);
+        if (isImplemented("getDirInfoByName"))
+            FSHelper.initGetDirInfoByName(fsi, this);
     }
 
     private boolean isImplemented(String funcName) {

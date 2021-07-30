@@ -382,35 +382,59 @@ final class FSHelper {
     static void initReadDirectory(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp, LibWinFsp libWinFsp) {
         fsi.ReadDirectory.set((pFS, pFileContext, pPattern, pMarker, pBuffer, length, pBytesTransferred) -> {
             try {
+                String pattern = StringUtils.fromPointer(pPattern);
+                String marker = StringUtils.fromPointer(pMarker);
                 List<FileInfo> fileInfos = winfsp.readDirectory(
                         fs(pFS),
                         StringUtils.fromPointer(pFileContext),
-                        StringUtils.fromPointer(pPattern),
-                        StringUtils.fromPointer(pMarker)
+                        pattern,
+                        marker
                 );
 
                 for (var fi : fileInfos) {
                     String fileName = fi.getFileName();
                     byte[] fileNameBytes = StringUtils.getEncoder().reset().encode(CharBuffer.wrap(fileName)).array();
 
-                    Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
-                    FSP_FSCTL_DIR_INFO di = diP.get();
-                    di.Size.set(Struct.size(di)); // size already includes file name length
-                    _putFileInfo(di.FileInfo, fi);
-                    di.setFileName(fileNameBytes);
+                    Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length, true);
+                    _putDirInfo(diP.get(), fi, fileNameBytes);
 
-                    boolean added = libWinFsp.FspFileSystemAddDirInfo(
+                    byte added = libWinFsp.FspFileSystemAddDirInfo(
                             diP.getPointer(),
                             pBuffer,
                             length,
                             pBytesTransferred
                     );
-                    if (!added)
+                    if (!bool(added))
                         return 0; // abort but with no error
                 }
 
                 // add one final null entry to mark the end of the operation
                 libWinFsp.FspFileSystemAddDirInfo(null, pBuffer, length, pBytesTransferred);
+
+                return 0;
+            } catch (NTStatusException e) {
+                return e.getNtStatus();
+            } catch (CharacterCodingException cce) {
+                throw new RuntimeException(cce);
+            }
+        });
+    }
+
+    static void initGetDirInfoByName(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+        fsi.GetDirInfoByName.set((pFS, pFileContext, pFileName, pDirInfo) -> {
+            try {
+                String parentDirName = StringUtils.fromPointer(pFileContext);
+                FileInfo fi = winfsp.getDirInfoByName(
+                        fs(pFS),
+                        parentDirName,
+                        StringUtils.fromPointer(pFileName)
+                );
+
+                String fileName = fi.getFileName();
+                byte[] fileNameBytes = StringUtils.getEncoder().reset().encode(CharBuffer.wrap(fileName)).array();
+
+                Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.of(pDirInfo, fileNameBytes.length);
+                _putDirInfo(diP.get(), fi, fileNameBytes);
 
                 return 0;
             } catch (NTStatusException e) {
@@ -440,6 +464,12 @@ final class FSHelper {
     private static void putFileInfo(Pointer pFI, FileInfo fi) {
         FSP_FSCTL_FILE_INFO fiOut = FSP_FSCTL_FILE_INFO.of(pFI).get();
         _putFileInfo(fiOut, fi);
+    }
+
+    private static void _putDirInfo(FSP_FSCTL_DIR_INFO diOut, FileInfo fi, byte[] fileNameBytes) {
+        diOut.Size.set(Struct.size(diOut)); // size already includes file name length
+        _putFileInfo(diOut.FileInfo, fi);
+        diOut.setFileName(fileNameBytes);
     }
 
     private static void _putFileInfo(FSP_FSCTL_FILE_INFO fiOut, FileInfo fi) {

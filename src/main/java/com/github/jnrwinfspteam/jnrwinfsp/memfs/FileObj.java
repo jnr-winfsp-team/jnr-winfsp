@@ -38,7 +38,6 @@ public class FileObj extends MemoryObj {
             for (int i = fileSize; i < prevFileSize; i++) {
                 data[i] = (byte) 0;
             }
-            setWriteTimes();
         } else if (fileSize > getAllocationSize())
             adaptAllocationSize(fileSize);
 
@@ -56,7 +55,6 @@ public class FileObj extends MemoryObj {
             final int newFileSize = Math.min(getFileSize(), newAllocationSize);
             this.data = Arrays.copyOf(data, newAllocationSize);
             this.fileSize = newFileSize;
-            setWriteTimes();
         }
     }
 
@@ -68,7 +66,7 @@ public class FileObj extends MemoryObj {
         int bytesToRead = Math.min(getFileSize() - offset, size);
         buffer.put(0, data, offset, bytesToRead);
 
-        setReadTimes();
+        setReadTime();
 
         return bytesToRead;
     }
@@ -84,7 +82,7 @@ public class FileObj extends MemoryObj {
 
         buffer.get(0, data, begOffset, size);
 
-        setWriteTimes();
+        setWriteTime();
 
         return size;
     }
@@ -99,19 +97,16 @@ public class FileObj extends MemoryObj {
 
         buffer.get(0, data, begOffset, transferredLength);
 
-        setWriteTimes();
+        setWriteTime();
 
         return transferredLength;
     }
 
-    private void setReadTimes() {
+    private void setReadTime() {
         setAccessTime(WinSysTime.now());
     }
 
-    private void setWriteTimes() {
-        WinSysTime now = WinSysTime.now();
-        setAccessTime(now);
-        setWriteTime(now);
-        setChangeTime(now);
+    private void setWriteTime() {
+        setWriteTime(WinSysTime.now());
     }
 }

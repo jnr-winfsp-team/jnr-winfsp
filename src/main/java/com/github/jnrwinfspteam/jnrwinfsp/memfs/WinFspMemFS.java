@@ -11,6 +11,7 @@ import com.github.jnrwinfspteam.jnrwinfsp.result.SecurityResult;
 import com.github.jnrwinfspteam.jnrwinfsp.result.VolumeInfo;
 import com.github.jnrwinfspteam.jnrwinfsp.result.WriteResult;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
+import com.github.jnrwinfspteam.jnrwinfsp.util.NaturalOrderComparator;
 import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
 
@@ -31,10 +32,12 @@ public class WinFspMemFS extends WinFspStubFS {
 
         var memFS = new WinFspMemFS();
         System.out.printf("Mounting %s...%n", mountPoint == null ? "" : mountPoint);
-        memFS.mountLocalDrive(mountPoint, false);
+        memFS.mountLocalDrive(mountPoint, FSCaseOption.CASE_PRESERVING, false);
         try {
             System.out.println("<Press Enter to quit>");
-            new BufferedReader(new InputStreamReader(System.in)).readLine();
+            try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
+                reader.readLine();
+            }
 //            memFS.objects.keySet().stream()
 //                    .sorted(NATURAL_ORDER)
 //                    .forEachOrdered(System.out::println);

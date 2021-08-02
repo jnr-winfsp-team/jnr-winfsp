@@ -13,6 +13,7 @@ import jnr.ffi.byref.PointerByReference;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,14 +61,15 @@ public abstract class AbstractWinFspFS implements WinFspFS {
     }
 
     @Override
-    public void mountLocalDrive(Path mountPoint, boolean debug) throws MountException {
+    public void mountLocalDrive(Path mountPoint, FSCaseOption fsCaseOption, boolean debug) throws MountException {
+        Objects.requireNonNull(fsCaseOption);
         synchronized (mountLock) {
             if (mounted)
                 throw new MountException("WinFsp local drive is already mounted");
 
             try {
                 Runtime runtime = Runtime.getSystemRuntime();
-                initVolumeParams(runtime);
+                initVolumeParams(runtime, fsCaseOption);
                 initFSInterface(runtime);
 
                 var ppFileSystem = new PointerByReference();
@@ -126,7 +128,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         }
     }
 
-    private void initVolumeParams(Runtime runtime) {
+    private void initVolumeParams(Runtime runtime, FSCaseOption fsCaseOption) {
         volumeParamsP = FSP_FSCTL_VOLUME_PARAMS.create(runtime);
         FSP_FSCTL_VOLUME_PARAMS vp = volumeParamsP.get();
 
@@ -136,8 +138,6 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.VolumeCreationTime.set(WinSysTime.now().get());
         vp.VolumeSerialNumber.set(0);
         vp.FileInfoTimeout.set(1000);
-        vp.setFileSystemAttribute(FSAttr.CaseSensitiveSearch, false);
-        vp.setFileSystemAttribute(FSAttr.CasePreservedNames, true);
         vp.setFileSystemAttribute(FSAttr.UnicodeOnDisk, true);
         vp.setFileSystemAttribute(FSAttr.PersistentAcls, true);
         vp.setFileSystemAttribute(FSAttr.PostCleanupWhenModifiedOnly, true);
@@ -146,6 +146,21 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.setFileSystemAttribute(FSAttr.FlushAndPurgeOnCleanup, true);
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsUserContext2, true);
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsFullContext, false);
+
+        switch (fsCaseOption) {
+            case CASE_SENSITIVE:
+                vp.setFileSystemAttribute(FSAttr.CaseSensitiveSearch, true);
+                vp.setFileSystemAttribute(FSAttr.CasePreservedNames, true);
+                break;
+            case CASE_PRESERVING:
+                vp.setFileSystemAttribute(FSAttr.CaseSensitiveSearch, false);
+                vp.setFileSystemAttribute(FSAttr.CasePreservedNames, true);
+                break;
+            case CASE_INSENSITIVE:
+                vp.setFileSystemAttribute(FSAttr.CaseSensitiveSearch, false);
+                vp.setFileSystemAttribute(FSAttr.CasePreservedNames, false);
+                break;
+        }
     }
 
     private void initFSInterface(Runtime runtime) {

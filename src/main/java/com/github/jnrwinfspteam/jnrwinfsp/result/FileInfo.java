@@ -10,17 +10,17 @@ import java.util.Set;
 public class FileInfo {
     private final String fileName;
     private final Set<FileAttributes> fileAttributes;
-    private int reparseTag;
     private long allocationSize;
     private long fileSize;
     private WinSysTime creationTime;
     private WinSysTime lastAccessTime;
     private WinSysTime lastWriteTime;
     private WinSysTime changeTime;
-    private long indexNumber;
-    private final int hardLinks = 0; /* unimplemented: set to 0 */
-    private int eaSize;
     private String normalizedName;
+    private int reparseTag;
+    private long indexNumber;
+    private int eaSize;
+    private final int hardLinks = 0; /* unimplemented: set to 0 */
 
     public FileInfo(String fileName) {
         this.fileName = Objects.requireNonNull(fileName);
@@ -30,6 +30,10 @@ public class FileInfo {
         this.lastAccessTime = now;
         this.lastWriteTime = now;
         this.changeTime = now;
+        this.normalizedName = this.fileName;
+        this.reparseTag = 0;
+        this.indexNumber = 0;
+        this.eaSize = 0;
     }
 
     public String getFileName() {
@@ -38,14 +42,6 @@ public class FileInfo {
 
     public final Set<FileAttributes> getFileAttributes() {
         return fileAttributes;
-    }
-
-    public final int getReparseTag() {
-        return reparseTag;
-    }
-
-    public final void setReparseTag(int reparseTag) {
-        this.reparseTag = reparseTag;
     }
 
     public final long getAllocationSize() {
@@ -96,6 +92,22 @@ public class FileInfo {
         this.changeTime = Objects.requireNonNull(changeTime);
     }
 
+    public String getNormalizedName() {
+        return normalizedName;
+    }
+
+    public void setNormalizedName(String normalizedName) {
+        this.normalizedName = Objects.requireNonNull(normalizedName);
+    }
+
+    public final int getReparseTag() {
+        return reparseTag;
+    }
+
+    public final void setReparseTag(int reparseTag) {
+        this.reparseTag = reparseTag;
+    }
+
     public final long getIndexNumber() {
         return indexNumber;
     }
@@ -114,13 +126,5 @@ public class FileInfo {
 
     public final void setEaSize(int eaSize) {
         this.eaSize = eaSize;
-    }
-
-    public String getNormalizedName() {
-        return normalizedName;
-    }
-
-    public void setNormalizedName(String normalizedName) {
-        this.normalizedName = Objects.requireNonNull(normalizedName);
     }
 }

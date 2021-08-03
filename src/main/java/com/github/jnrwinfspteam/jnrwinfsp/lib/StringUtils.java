@@ -132,6 +132,26 @@ public final class StringUtils {
         }
     }
 
+    public static byte[] toBytes(String s, boolean nullTerminated) {
+        if (s == null)
+            return null;
+
+        try {
+            ByteBuffer buf = getEncoder().reset().encode(CharBuffer.wrap(s));
+            if (!nullTerminated)
+                return buf.array();
+
+            final int bufSize = buf.remaining();
+            byte[] bytes = new byte[bufSize + 1];
+            buf.get(bytes, 0, bufSize);
+            bytes[bufSize] = '\0';
+
+            return bytes;
+        } catch (CharacterCodingException cce) {
+            throw new RuntimeException(cce);
+        }
+    }
+
     private StringUtils() {
         // not instantiable
     }

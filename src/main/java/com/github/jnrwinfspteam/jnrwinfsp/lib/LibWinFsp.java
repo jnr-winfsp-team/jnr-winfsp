@@ -19,8 +19,8 @@ public interface LibWinFsp {
      */
     @u_int32_t
     int FspFileSystemPreflight(
-            char[] devicePath,
-            char[] mountPoint
+            byte[] devicePath,
+            byte[] mountPoint
     );
 
     /**
@@ -37,7 +37,7 @@ public interface LibWinFsp {
      */
     @u_int32_t
     int FspFileSystemCreate(
-            char[] devicePath,
+            byte[] devicePath,
             Pointer /* FSP_FSCTL_VOLUME_PARAMS */ volumeParams,
             Pointer /* FSP_FILE_SYSTEM_INTERFACE */ _interface,
             @Out PointerByReference pFileSystem
@@ -71,7 +71,7 @@ public interface LibWinFsp {
     @u_int32_t
     int FspFileSystemSetMountPoint(
             Pointer /* FSP_FILE_SYSTEM */ fileSystem,
-            char[] mountPoint
+            byte[] mountPoint
     );
 
     /**

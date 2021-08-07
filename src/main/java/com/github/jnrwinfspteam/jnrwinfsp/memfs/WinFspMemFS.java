@@ -110,7 +110,7 @@ public class WinFspMemFS extends WinFspStubFS {
                            String securityDescriptorString,
                            long allocationSize) throws NTStatusException {
 
-        verboseOut.println("== CREATE == " + fileName);
+        verboseOut.println("== CREATE == " + fileName + " security=" + securityDescriptorString);
         synchronized (objects) {
             Path filePath = getPath(fileName);
 
@@ -398,7 +398,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, String securityDescriptorStr)
             throws NTStatusException {
 
-        verboseOut.println("== SET SECURITY == " + fileName);
+        verboseOut.println("== SET SECURITY == " + fileName + " security=" + securityDescriptorStr);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj memObj = getObject(filePath);

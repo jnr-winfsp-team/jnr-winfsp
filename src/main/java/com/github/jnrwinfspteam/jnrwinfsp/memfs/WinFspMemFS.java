@@ -31,8 +31,8 @@ public class WinFspMemFS extends WinFspStubFS {
             mountPoint = Paths.get(args[0]);
 
         var memFS = new WinFspMemFS();
-        System.out.printf("Mounting %s...%n", mountPoint == null ? "" : mountPoint);
-        memFS.mountLocalDrive(mountPoint, FSCaseOption.CASE_PRESERVING, false);
+        System.out.printf("Mounting %s ...%n", mountPoint == null ? "" : mountPoint);
+        memFS.mountLocalDrive(mountPoint, FSCaseOption.CASE_SENSITIVE, false);
         try {
             System.out.println("<Press Enter to quit>");
             try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
@@ -42,7 +42,7 @@ public class WinFspMemFS extends WinFspStubFS {
 //                    .sorted(NATURAL_ORDER)
 //                    .forEachOrdered(System.out::println);
         } finally {
-            System.out.printf("Unmounting %s...%n", mountPoint == null ? "" : mountPoint);
+            System.out.printf("Unmounting %s ...%n", mountPoint == null ? "" : mountPoint);
             memFS.unmountLocalDrive();
             System.out.println("<done>");
         }
@@ -484,10 +484,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     private String getPathKey(Path filePath) {
-        if (filePath == null)
-            return null;
-        else
-            return filePath.toString().toLowerCase(Locale.ROOT);
+        return Objects.toString(filePath, null);
     }
 
     private boolean hasObject(Path filePath) {

@@ -146,6 +146,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.setFileSystemAttribute(FSAttr.FlushAndPurgeOnCleanup, true);
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsUserContext2, true);
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsFullContext, false);
+        vp.setFileSystemAttribute(FSAttr.AllowOpenInKernelMode, true);
 
         switch (fsCaseOption) {
             case CASE_SENSITIVE:

@@ -130,6 +130,6 @@ public class FileInfo {
 
     @Override
     public String toString() {
-        return fileName;
+        return fileName + "[" + allocationSize + ";" + fileSize + "]" + fileAttributes;
     }
 }

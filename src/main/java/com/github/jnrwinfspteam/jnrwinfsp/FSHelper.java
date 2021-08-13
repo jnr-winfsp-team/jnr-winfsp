@@ -63,7 +63,9 @@ final class FSHelper {
                 String fileName = StringUtils.fromPointer(pFileName);
                 SecurityResult res = winfsp.getSecurityByName(fs(pFS), fileName);
 
-                pFileAttributes.putInt(0, FileAttributes.intOf(res.getFileInfo().getFileAttributes()));
+                if (pFileAttributes != null)
+                    pFileAttributes.putInt(0, FileAttributes.intOf(res.getFileInfo().getFileAttributes()));
+
                 SecurityUtils.fromString(
                         libWinFsp,
                         libKernel32,

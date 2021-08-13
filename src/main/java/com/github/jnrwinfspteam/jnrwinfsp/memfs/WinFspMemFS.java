@@ -49,7 +49,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
 
-    private static final String SECURITY_DESCRIPTOR = "O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;FA;;;WD)";
+    private static final String SECURITY_DESCRIPTOR = "O:BAG:BAD:PAR(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;WD)";
     private static final Comparator<String> NATURAL_ORDER = new NaturalOrderComparator();
     private static final long MAX_FILE_NODES = 1024;
     private static final long MAX_FILE_SIZE = 16 * 1024 * 1024;
@@ -79,15 +79,19 @@ public class WinFspMemFS extends WinFspStubFS {
     public VolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) {
 
         verboseOut.println("== GET VOLUME INFO ==");
-        return generateVolumeInfo();
+        synchronized (objects) {
+            return generateVolumeInfo();
+        }
     }
 
     @Override
     public VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) {
 
         verboseOut.println("== SET VOLUME LABEL == " + volumeLabel);
-        this.volumeLabel = volumeLabel;
-        return generateVolumeInfo();
+        synchronized (objects) {
+            this.volumeLabel = volumeLabel;
+            return generateVolumeInfo();
+        }
     }
 
     @Override
@@ -114,12 +118,17 @@ public class WinFspMemFS extends WinFspStubFS {
         synchronized (objects) {
             Path filePath = getPath(fileName);
 
-            // Ensure the parent object exists and is a directory
-            getDirObject(filePath.getParent());
-
             // Check for duplicate file/folder
             if (hasObject(filePath))
                 throw new NTStatusException(0xC0000035); // STATUS_OBJECT_NAME_COLLISION
+
+            // Ensure the parent object exists and is a directory
+            getDirObject(filePath.getParent());
+
+            if (objects.size() >= MAX_FILE_NODES)
+                throw new NTStatusException(0xC00002EA); // STATUS_CANNOT_MAKE
+            if (allocationSize > MAX_FILE_SIZE)
+                throw new NTStatusException(0xC000007F); // STATUS_DISK_FULL
 
             MemoryObj obj;
             if (createOptions.contains(CreateOptions.FILE_DIRECTORY_FILE))
@@ -170,6 +179,12 @@ public class WinFspMemFS extends WinFspStubFS {
             file.getFileAttributes().addAll(fileAttributes);
 
             file.setAllocationSize(Math.toIntExact(allocationSize));
+            file.setFileSize(0);
+
+            WinSysTime now = WinSysTime.now();
+            file.setAccessTime(now);
+            file.setWriteTime(now);
+            file.setChangeTime(now);
 
             return file.generateFileInfo();
         }
@@ -184,27 +199,28 @@ public class WinFspMemFS extends WinFspStubFS {
                 Path filePath = getPath(fileName);
                 MemoryObj memObj = getObject(filePath);
 
+                if (flags.contains(CleanupFlags.SET_ARCHIVE_BIT) && memObj instanceof FileObj)
+                    memObj.getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_ARCHIVE);
+
+                WinSysTime now = WinSysTime.now();
+
+                if (flags.contains(CleanupFlags.SET_LAST_ACCESS_TIME))
+                    memObj.setAccessTime(now);
+
+                if (flags.contains(CleanupFlags.SET_LAST_WRITE_TIME))
+                    memObj.setWriteTime(now);
+
+                if (flags.contains(CleanupFlags.SET_CHANGE_TIME))
+                    memObj.setChangeTime(now);
+
+                if (flags.contains(CleanupFlags.SET_ALLOCATION_SIZE) && memObj instanceof FileObj)
+                    ((FileObj) memObj).adaptAllocationSize(memObj.getFileSize());
+
                 if (flags.contains(CleanupFlags.DELETE)) {
                     if (isNotEmptyDirectory(memObj))
                         return; // abort if trying to remove a non-empty directory
                     removeObject(memObj.getPath());
                 }
-
-                if (flags.contains(CleanupFlags.SET_ALLOCATION_SIZE) && memObj instanceof FileObj)
-                    ((FileObj) memObj).adaptAllocationSize(memObj.getFileSize());
-
-                if (flags.contains(CleanupFlags.SET_ARCHIVE_BIT) && memObj instanceof FileObj)
-                    memObj.getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_ARCHIVE);
-
-                if (flags.contains(CleanupFlags.SET_LAST_ACCESS_TIME))
-                    memObj.setAccessTime(WinSysTime.now());
-
-                if (flags.contains(CleanupFlags.SET_LAST_WRITE_TIME))
-                    memObj.setWriteTime(WinSysTime.now());
-
-                if (flags.contains(CleanupFlags.SET_CHANGE_TIME))
-                    memObj.setChangeTime(WinSysTime.now());
-
             }
         } catch (NTStatusException e) {
             // we have no way to pass an error status via cleanup
@@ -353,20 +369,13 @@ public class WinFspMemFS extends WinFspStubFS {
             Path oldFilePath = getPath(oldFileName);
             Path newFilePath = getPath(newFileName);
 
-            MemoryObj oldMemObj = getObject(oldFilePath);
-            // Handle existing new file/directory scenario
-            if (hasObject(newFilePath)) {
-                // case-sensitive comparison of base names
-                if (Objects.equals(
-                        getObject(newFilePath).getName(),
-                        Objects.toString(Path.of(newFileName).normalize().getFileName(), null))
-                ) {
-                    if (!replaceIfExists)
-                        throw new NTStatusException(0xC0000035); // STATUS_OBJECT_NAME_COLLISION
-                    else if (oldMemObj instanceof DirObj)
-                        // a directory cannot be renamed to one that already exists
-                        throw new NTStatusException(0xC0000022); // STATUS_ACCESS_DENIED
-                }
+            if (hasObject(newFilePath) && !oldFileName.equals(newFileName)) {
+                if (!replaceIfExists)
+                    throw new NTStatusException(0xC0000035); // STATUS_OBJECT_NAME_COLLISION
+
+                MemoryObj newMemObj = getObject(newFilePath);
+                if (newMemObj instanceof DirObj)
+                    throw new NTStatusException(0xC0000022); // STATUS_ACCESS_DENIED
             }
 
             // Rename file or directory (and all existing children)

@@ -65,4 +65,9 @@ public class WinSysTime {
 
         return ZERO.plus(duration);
     }
+
+    @Override
+    public String toString() {
+        return toInstant().toString();
+    }
 }

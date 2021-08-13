@@ -127,4 +127,9 @@ public class FileInfo {
     public final void setEaSize(int eaSize) {
         this.eaSize = eaSize;
     }
+
+    @Override
+    public String toString() {
+        return fileName;
+    }
 }

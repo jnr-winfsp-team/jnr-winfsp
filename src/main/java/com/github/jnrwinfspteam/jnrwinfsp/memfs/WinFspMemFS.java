@@ -128,7 +128,7 @@ public class WinFspMemFS extends WinFspStubFS {
                 throw new NTStatusException(0xC0000035); // STATUS_OBJECT_NAME_COLLISION
 
             // Ensure the parent object exists and is a directory
-            DirObj parent = getDirObject(filePath.getParent());
+            DirObj parent = getParentObject(filePath);
 
             if (objects.size() >= MAX_FILE_NODES)
                 throw new NTStatusException(0xC00002EA); // STATUS_CANNOT_MAKE
@@ -478,7 +478,7 @@ public class WinFspMemFS extends WinFspStubFS {
                 if (marker == null)
                     entries.add(dir.generateFileInfo("."));
                 if (marker == null || marker.equals(".")) {
-                    DirObj parentDir = getDirObject(filePath.getParent());
+                    DirObj parentDir = getParentObject(filePath);
                     entries.add(parentDir.generateFileInfo(".."));
                 }
             }
@@ -554,10 +554,22 @@ public class WinFspMemFS extends WinFspStubFS {
 
     private MemoryObj getObject(Path filePath) throws NTStatusException {
         MemoryObj obj = objects.get(getPathKey(filePath));
-        if (obj == null)
+        if (obj == null) {
+            getParentObject(filePath); // may throw exception with different status code
             throw new NTStatusException(0xC0000034); // STATUS_OBJECT_NAME_NOT_FOUND
+        }
 
         return obj;
+    }
+
+    private DirObj getParentObject(Path filePath) throws NTStatusException {
+        MemoryObj parentObj = objects.get(getPathKey(filePath.getParent()));
+        if (parentObj == null)
+            throw new NTStatusException(0xC000003A); // STATUS_OBJECT_PATH_NOT_FOUND
+        if (!(parentObj instanceof DirObj))
+            throw new NTStatusException(0xC0000103); // STATUS_NOT_A_DIRECTORY
+
+        return (DirObj)parentObj;
     }
 
     private void putObject(MemoryObj obj) {

@@ -6,18 +6,18 @@ import java.nio.file.Path;
 
 public class DirObj extends MemoryObj {
 
-    public DirObj(Path path, String securityDescriptor) {
-        super(path, securityDescriptor);
+    public DirObj(DirObj parent, Path path, String securityDescriptor) {
+        super(parent, path, securityDescriptor);
         getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
     }
 
     @Override
-    protected int getAllocationSize() {
+    public int getAllocationSize() {
         return 0;
     }
 
     @Override
-    protected int getFileSize() {
+    public int getFileSize() {
         return 0;
     }
 }

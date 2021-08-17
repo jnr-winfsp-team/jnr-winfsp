@@ -68,9 +68,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public WinFspMemFS(boolean verbose) {
         this.rootPath = Path.of("\\").normalize();
         this.objects = new HashMap<>();
-        this.objects.put(rootPath.toString(), new DirObj(rootPath, SECURITY_DESCRIPTOR));
-//      this.objects.put("\\TestDir", new DirObj(Path.of("\\TestDir").normalize(), SECURITY_DESCRIPTOR));
-//      this.objects.put("\\TestFile", new FileObj(Path.of("\\TestFile").normalize(), SECURITY_DESCRIPTOR));
+        this.objects.put(rootPath.toString(), new DirObj(null, rootPath, SECURITY_DESCRIPTOR));
         this.volumeLabel = "MemFS";
 
         this.verboseOut = verbose ? System.out : new PrintStream(OutputStream.nullOutputStream());
@@ -130,7 +128,7 @@ public class WinFspMemFS extends WinFspStubFS {
                 throw new NTStatusException(0xC0000035); // STATUS_OBJECT_NAME_COLLISION
 
             // Ensure the parent object exists and is a directory
-            getDirObject(filePath.getParent());
+            DirObj parent = getDirObject(filePath.getParent());
 
             if (objects.size() >= MAX_FILE_NODES)
                 throw new NTStatusException(0xC00002EA); // STATUS_CANNOT_MAKE
@@ -139,9 +137,9 @@ public class WinFspMemFS extends WinFspStubFS {
 
             MemoryObj obj;
             if (createOptions.contains(CreateOptions.FILE_DIRECTORY_FILE))
-                obj = new DirObj(filePath, securityDescriptor);
+                obj = new DirObj(parent, filePath, securityDescriptor);
             else {
-                var file = new FileObj(filePath, securityDescriptor);
+                var file = new FileObj(parent, filePath, securityDescriptor);
                 file.setAllocationSize(Math.toIntExact(allocationSize));
                 obj = file;
             }
@@ -420,7 +418,7 @@ public class WinFspMemFS extends WinFspStubFS {
                     throw new NTStatusException(0xC0000022); // STATUS_ACCESS_DENIED
             }
 
-            // Rename file or directory (and all existing children)
+            // Rename file or directory (and all existing descendants)
             for (var obj : List.copyOf(objects.values())) {
                 if (obj.getPath().startsWith(oldFilePath)) {
                     Path relativePath = oldFilePath.relativize(obj.getPath());
@@ -564,10 +562,14 @@ public class WinFspMemFS extends WinFspStubFS {
 
     private void putObject(MemoryObj obj) {
         objects.put(getPathKey(obj.getPath()), obj);
+        obj.touchParent();
     }
 
     private MemoryObj removeObject(Path filePath) {
-        return objects.remove(getPathKey(filePath));
+        MemoryObj obj = objects.remove(getPathKey(filePath));
+        if (obj != null)
+            obj.touchParent();
+        return obj;
     }
 
     private FileObj getFileObject(Path filePath) throws NTStatusException {

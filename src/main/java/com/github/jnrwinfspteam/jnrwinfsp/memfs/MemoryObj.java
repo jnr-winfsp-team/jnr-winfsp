@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public abstract class MemoryObj {
+    private final MemoryObj parent;
     private Path path;
     private String securityDescriptor;
     private final Set<FileAttributes> fileAttributes;
@@ -19,7 +20,8 @@ public abstract class MemoryObj {
     private WinSysTime changeTime;
     private long indexNumber;
 
-    public MemoryObj(Path path, String securityDescriptor) {
+    public MemoryObj(MemoryObj parent, Path path, String securityDescriptor) {
+        this.parent = parent;
         this.path = Objects.requireNonNull(path);
         this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
         this.fileAttributes = EnumSet.noneOf(FileAttributes.class);
@@ -51,6 +53,10 @@ public abstract class MemoryObj {
         this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
     }
 
+    public MemoryObj getParent() {
+        return parent;
+    }
+
     public FileInfo generateFileInfo() {
         return generateFileInfo(getPath().toString());
     }
@@ -68,31 +74,44 @@ public abstract class MemoryObj {
         return res;
     }
 
-    protected final Set<FileAttributes> getFileAttributes() {
+    public void touch() {
+        WinSysTime now = WinSysTime.now();
+        setAccessTime(now);
+        setWriteTime(now);
+        setChangeTime(now);
+    }
+
+    public void touchParent() {
+        MemoryObj parent = getParent();
+        if (parent != null)
+            parent.touch();
+    }
+
+    public final Set<FileAttributes> getFileAttributes() {
         return fileAttributes;
     }
 
-    protected final void setCreationTime(WinSysTime time) {
+    public final void setCreationTime(WinSysTime time) {
         this.creationTime = Objects.requireNonNull(time);
     }
 
-    protected final void setAccessTime(WinSysTime time) {
+    public final void setAccessTime(WinSysTime time) {
         this.lastAccessTime = Objects.requireNonNull(time);
     }
 
-    protected final void setWriteTime(WinSysTime time) {
+    public final void setWriteTime(WinSysTime time) {
         this.lastWriteTime = Objects.requireNonNull(time);
     }
 
-    protected final void setChangeTime(WinSysTime time) {
+    public final void setChangeTime(WinSysTime time) {
         this.changeTime = Objects.requireNonNull(time);
     }
 
-    protected final void setIndexNumber(long indexNumber) {
+    public final void setIndexNumber(long indexNumber) {
         this.indexNumber = indexNumber;
     }
 
-    protected abstract int getAllocationSize();
+    public abstract int getAllocationSize();
 
-    protected abstract int getFileSize();
+    public abstract int getFileSize();
 }

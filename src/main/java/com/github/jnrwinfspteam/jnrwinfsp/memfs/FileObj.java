@@ -14,20 +14,20 @@ public class FileObj extends MemoryObj {
     private byte[] data;
     private int fileSize;
 
-    public FileObj(Path path, String securityDescriptor) {
-        super(path, securityDescriptor);
+    public FileObj(DirObj parent, Path path, String securityDescriptor) {
+        super(parent, path, securityDescriptor);
         this.data = new byte[0];
         this.fileSize = 0;
         getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_ARCHIVE);
     }
 
     @Override
-    protected synchronized int getAllocationSize() {
+    public synchronized int getAllocationSize() {
         return data.length;
     }
 
     @Override
-    protected synchronized int getFileSize() {
+    public synchronized int getFileSize() {
         return fileSize;
     }
 

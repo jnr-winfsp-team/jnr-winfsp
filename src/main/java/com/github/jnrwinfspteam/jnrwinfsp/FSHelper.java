@@ -395,7 +395,7 @@ final class FSHelper {
 
                 for (var fi : fileInfos) {
                     String fileName = fi.getFileName();
-                    byte[] fileNameBytes = StringUtils.getEncoder().reset().encode(CharBuffer.wrap(fileName)).array();
+                    byte[] fileNameBytes = StringUtils.toBytes(fileName, false);
 
                     Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length, true);
                     _putDirInfo(diP.get(), fi, fileNameBytes);
@@ -416,8 +416,6 @@ final class FSHelper {
                 return 0;
             } catch (NTStatusException e) {
                 return e.getNtStatus();
-            } catch (CharacterCodingException cce) {
-                throw new RuntimeException(cce);
             }
         });
     }

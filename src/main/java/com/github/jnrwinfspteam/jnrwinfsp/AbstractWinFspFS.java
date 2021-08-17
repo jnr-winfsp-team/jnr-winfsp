@@ -140,6 +140,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.FileInfoTimeout.set(1000);
         vp.setFileSystemAttribute(FSAttr.UnicodeOnDisk, true);
         vp.setFileSystemAttribute(FSAttr.PersistentAcls, true);
+        vp.setFileSystemAttribute(FSAttr.ReparsePoints, true);
         vp.setFileSystemAttribute(FSAttr.PostCleanupWhenModifiedOnly, true);
         vp.setFileSystemAttribute(FSAttr.PassQueryDirectoryPattern, true);
         vp.setFileSystemAttribute(FSAttr.PassQueryDirectoryFileName, true);
@@ -175,7 +176,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         if (isImplemented("getSecurityByName"))
             FSHelper.initGetSecurityByName(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
         if (isImplemented("create"))
-            FSHelper.initCreate(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
+            FSHelper.initCreateEx(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
         if (isImplemented("open"))
             FSHelper.initOpen(fsi, this);
         if (isImplemented("overwrite"))
@@ -208,6 +209,14 @@ public abstract class AbstractWinFspFS implements WinFspFS {
             FSHelper.initReadDirectory(fsi, this, this.libWinFsp);
         if (isImplemented("getDirInfoByName"))
             FSHelper.initGetDirInfoByName(fsi, this);
+        if (isImplemented("getReparsePointData"))
+            FSHelper.initResolveReparsePoints(fsi, this, this.libWinFsp);
+        if (isImplemented("getReparsePointData"))
+            FSHelper.initGetReparsePoint(fsi, this);
+        if (isImplemented("getReparsePointData") && isImplemented("setReparsePoint"))
+            FSHelper.initSetReparsePoint(fsi, this, this.libWinFsp);
+        if (isImplemented("getReparsePointData") && isImplemented("deleteReparsePoint"))
+            FSHelper.initDeleteReparsePoint(fsi, this, this.libWinFsp);
     }
 
     private boolean isImplemented(String funcName) {

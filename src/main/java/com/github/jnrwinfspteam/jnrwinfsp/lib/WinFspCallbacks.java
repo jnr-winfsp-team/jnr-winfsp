@@ -2,6 +2,7 @@ package com.github.jnrwinfspteam.jnrwinfsp.lib;
 
 import jnr.ffi.Pointer;
 import jnr.ffi.annotations.Delegate;
+import jnr.ffi.types.size_t;
 import jnr.ffi.types.u_int32_t;
 import jnr.ffi.types.u_int64_t;
 
@@ -75,52 +76,63 @@ public final class WinFspCallbacks {
         int GetSecurityByName(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                               Pointer /* WSTR */ pFileName,
                               Pointer /* UINT32 */ pFileAttributes /* or ReparsePointIndex */,
-                              Pointer /* VOID */ pSecurityDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */,
+                              Pointer /* SECURITY_DESCRIPTOR */ pSecurityDescriptor,
                               Pointer /* SIZE_T */ pSecurityDescriptorSize
         );
     }
 
     @FunctionalInterface
-    public interface CreateCallback {
+    public interface CreateExCallback {
         /**
          * Create new file or directory.
+         * <p>
+         * This function works like Create, except that it also accepts an extra buffer that
+         * may contain extended attributes or a reparse point.
+         * <p>
+         * NOTE: If both Create and CreateEx are defined, CreateEx takes precedence.
          *
-         * @param pFileSystem         The file system on which this request is posted.
-         * @param pFileName           The name of the file or directory to be created.
-         * @param createOptions       Create options for this request. This parameter has the same meaning as the
-         *                            CreateOptions parameter of the NtCreateFile API. User mode file systems should typically
-         *                            only be concerned with the flag FILE_DIRECTORY_FILE, which is an instruction to create a
-         *                            directory rather than a file. Some file systems may also want to pay attention to the
-         *                            FILE_NO_INTERMEDIATE_BUFFERING and FILE_WRITE_THROUGH flags, although these are
-         *                            typically handled by the FSD component.
-         * @param grantedAccess       Determines the specific access rights that have been granted for this request. Upon
-         *                            receiving this call all access checks have been performed and the user mode file system
-         *                            need not perform any additional checks. However this parameter may be useful to a user
-         *                            mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
-         *                            which flags to use in its POSIX open() call.
-         * @param fileAttributes      File attributes to apply to the newly created file or directory.
-         * @param pSecurityDescriptor Security descriptor to apply to the newly created file or directory. This security
-         *                            descriptor will always be in self-relative format. Its length can be retrieved using the
-         *                            Windows GetSecurityDescriptorLength API. Will be NULL for named streams.
-         * @param allocationSize      Allocation size for the newly created file.
-         * @param ppFileContext       [out]
-         *                            Pointer that will receive the file context on successful return from this call.
-         * @param pFileInfo           [out]
-         *                            Pointer to a structure that will receive the file information on successful return
-         *                            from this call. This information includes file attributes, file times, etc.
+         * @param pFileSystem               The file system on which this request is posted.
+         * @param pFileName                 The name of the file or directory to be created.
+         * @param createOptions             Create options for this request. This parameter has the same meaning as the
+         *                                  CreateOptions parameter of the NtCreateFile API. User mode file systems should typically
+         *                                  only be concerned with the flag FILE_DIRECTORY_FILE, which is an instruction to create a
+         *                                  directory rather than a file. Some file systems may also want to pay attention to the
+         *                                  FILE_NO_INTERMEDIATE_BUFFERING and FILE_WRITE_THROUGH flags, although these are
+         *                                  typically handled by the FSD component.
+         * @param grantedAccess             Determines the specific access rights that have been granted for this request. Upon
+         *                                  receiving this call all access checks have been performed and the user mode file system
+         *                                  need not perform any additional checks. However this parameter may be useful to a user
+         *                                  mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
+         *                                  which flags to use in its POSIX open() call.
+         * @param fileAttributes            File attributes to apply to the newly created file or directory.
+         * @param pSecurityDescriptor       Security descriptor to apply to the newly created file or directory. This security
+         *                                  descriptor will always be in self-relative format. Its length can be retrieved using the
+         *                                  Windows GetSecurityDescriptorLength API. Will be NULL for named streams.
+         * @param allocationSize            Allocation size for the newly created file.
+         * @param pExtraBuffer              Extended attributes or reparse point buffer.
+         * @param extraLength               Extended attributes or reparse point buffer length.
+         * @param extraBufferIsReparsePoint FALSE: extra buffer is extended attributes; TRUE: extra buffer is reparse point.
+         * @param ppFileContext             [out]
+         *                                  Pointer that will receive the file context on successful return from this call.
+         * @param pFileInfo                 [out]
+         *                                  Pointer to a structure that will receive the file information on successful return
+         *                                  from this call. This information includes file attributes, file times, etc.
          * @return STATUS_SUCCESS or error code.
          */
         @Delegate
         @u_int32_t
-        int Create(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
-                   Pointer /* WSTR */ pFileName,
-                   @u_int32_t int createOptions,
-                   @u_int32_t int grantedAccess,
-                   @u_int32_t int fileAttributes,
-                   Pointer /* VOID */ pSecurityDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */,
-                   @u_int64_t long allocationSize,
-                   Pointer /* PVOID */ ppFileContext,
-                   Pointer /* FSP_FSCTL_FILE_INFO */ pFileInfo
+        int CreateEx(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
+                     Pointer /* WSTR */ pFileName,
+                     @u_int32_t int createOptions,
+                     @u_int32_t int grantedAccess,
+                     @u_int32_t int fileAttributes,
+                     Pointer /* SECURITY_DESCRIPTOR */ pSecurityDescriptor,
+                     @u_int64_t long allocationSize,
+                     Pointer /* VOID */ pExtraBuffer,
+                     long extraLength,
+                     byte /* BOOLEAN */ extraBufferIsReparsePoint,
+                     Pointer /* PVOID */ ppFileContext,
+                     Pointer /* FSP_FSCTL_FILE_INFO */ pFileInfo
         );
     }
 
@@ -524,7 +536,7 @@ public final class WinFspCallbacks {
         @u_int32_t
         int GetSecurity(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                         Pointer /* VOID */ pFileContext,
-                        Pointer /* VOID */ pSecurityDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */,
+                        Pointer /* SECURITY_DESCRIPTOR */ pSecurityDescriptor,
                         Pointer /* SIZE_T */ pSecurityDescriptorSize
         );
     }
@@ -547,7 +559,7 @@ public final class WinFspCallbacks {
         int SetSecurity(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
                         Pointer /* VOID */ pFileContext,
                         @u_int32_t int securityInformation,
-                        Pointer /* VOID */ pModificationDescriptor /* (actual pointer is a PSECURITY_DESCRIPTOR which is a PVOID) */
+                        Pointer /* SECURITY_DESCRIPTOR */ pModificationDescriptor
         );
     }
 
@@ -582,6 +594,124 @@ public final class WinFspCallbacks {
                           Pointer /* VOID */ pBuffer,
                           @u_int32_t int length,
                           Pointer /* ULONG */ pBytesTransferred
+        );
+    }
+
+    @FunctionalInterface
+    public interface ResolveReparsePointsCallback {
+        /**
+         * Resolve reparse points.
+         * <p>
+         * Reparse points are a general mechanism for attaching special behavior to files.
+         * A file or directory can contain a reparse point. A reparse point is data that has
+         * special meaning to the file system, Windows or user applications. For example, NTFS
+         * and Windows use reparse points to implement symbolic links. As another example,
+         * a particular file system may use reparse points to emulate UNIX FIFO's.
+         * <p>
+         * This function is expected to resolve as many reparse points as possible. If a reparse
+         * point is encountered that is not understood by the file system further reparse point
+         * resolution should stop; the reparse point data should be returned to the FSD with status
+         * STATUS_REPARSE/reparse-tag. If a reparse point (symbolic link) is encountered that is
+         * understood by the file system but points outside it, the reparse point should be
+         * resolved, but further reparse point resolution should stop; the resolved file name
+         * should be returned to the FSD with status STATUS_REPARSE/IO_REPARSE.
+         *
+         * @param pFileSystem              The file system on which this request is posted.
+         * @param pFileName                The name of the file or directory to have its reparse points resolved.
+         * @param reparsePointIndex        The index of the first reparse point within FileName.
+         * @param resolveLastPathComponent If FALSE, the last path component of FileName should not be resolved, even
+         *                                 if it is a reparse point that can be resolved. If TRUE, all path components
+         *                                 should be resolved if possible.
+         * @param pIoStatus                Pointer to storage that will receive the status to return to the FSD. When
+         *                                 this function succeeds it must set PIoStatus->Status to STATUS_REPARSE and
+         *                                 PIoStatus->Information to either IO_REPARSE or the reparse tag.
+         * @param pBuffer                  Pointer to a buffer that will receive the resolved file name (IO_REPARSE) or
+         *                                 reparse data (reparse tag). If the function returns a file name, it should
+         *                                 not be NULL terminated.
+         * @param pSize                    [in,out]
+         *                                 Pointer to the buffer size. On input it contains the size of the buffer.
+         *                                 On output it will contain the actual size of data copied.
+         * @return STATUS_REPARSE or error code.
+         */
+        @Delegate
+        @u_int32_t
+        int ResolveReparsePoints(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
+                                 Pointer /* WSTR */ pFileName,
+                                 @u_int32_t int reparsePointIndex,
+                                 byte /* BOOLEAN */ resolveLastPathComponent,
+                                 Pointer /* IO_STATUS_BLOCK */ pIoStatus,
+                                 Pointer /* VOID */ pBuffer,
+                                 Pointer /* SIZE_T */ pSize
+        );
+    }
+
+    @FunctionalInterface
+    public interface GetReparsePointCallback {
+        /**
+         * Get reparse point.
+         *
+         * @param pFileSystem  The file system on which this request is posted.
+         * @param pFileContext The file context of the reparse point.
+         * @param pFileName    The file name of the reparse point.
+         * @param pBuffer      Pointer to a buffer that will receive the results of this operation. If
+         *                     the function returns a symbolic link path, it should not be NULL terminated.
+         * @param pSize        [in,out]
+         *                     Pointer to the buffer size. On input it contains the size of the buffer.
+         *                     On output it will contain the actual size of data copied.
+         * @return STATUS_SUCCESS or error code.
+         */
+        @Delegate
+        @u_int32_t
+        int GetReparsePoint(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
+                            Pointer /* VOID */ pFileContext,
+                            Pointer /* WSTR */ pFileName,
+                            Pointer /* VOID */ pBuffer,
+                            Pointer /* SIZE_T */ pSize
+        );
+    }
+
+    @FunctionalInterface
+    public interface SetReparsePointCallback {
+        /**
+         * Set reparse point.
+         *
+         * @param pFileSystem  The file system on which this request is posted.
+         * @param pFileContext The file context of the reparse point.
+         * @param pFileName    The file name of the reparse point.
+         * @param pBuffer      Pointer to a buffer that contains the data for this operation. If this buffer
+         *                     contains a symbolic link path, it should not be assumed to be NULL terminated.
+         * @param size         Size of data to write.
+         * @return STATUS_SUCCESS or error code.
+         */
+        @Delegate
+        @u_int32_t
+        int SetReparsePoint(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
+                            Pointer /* VOID */ pFileContext,
+                            Pointer /* WSTR */ pFileName,
+                            Pointer /* VOID */ pBuffer,
+                            @size_t long size
+        );
+    }
+
+    @FunctionalInterface
+    public interface DeleteReparsePointCallback {
+        /**
+         * Delete reparse point.
+         *
+         * @param pFileSystem  The file system on which this request is posted.
+         * @param pFileContext The file context of the reparse point.
+         * @param pFileName    The file name of the reparse point.
+         * @param pBuffer      Pointer to a buffer that contains the data for this operation.
+         * @param size         Size of data to write.
+         * @return STATUS_SUCCESS or error code.
+         */
+        @Delegate
+        @u_int32_t
+        int DeleteReparsePoint(Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
+                               Pointer /* VOID */ pFileContext,
+                               Pointer /* WSTR */ pFileName,
+                               Pointer /* VOID */ pBuffer,
+                               @size_t long size
         );
     }
 

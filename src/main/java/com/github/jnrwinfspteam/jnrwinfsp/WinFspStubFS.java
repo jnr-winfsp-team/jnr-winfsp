@@ -43,7 +43,9 @@ public class WinFspStubFS extends AbstractWinFspFS {
                            int grantedAccess,
                            Set<FileAttributes> fileAttributes,
                            String securityDescriptorString,
-                           long allocationSize) throws NTStatusException {
+                           long allocationSize,
+                           byte[] reparseData,
+                           int reparseTag) throws NTStatusException {
         return null;
     }
 
@@ -175,5 +177,23 @@ public class WinFspStubFS extends AbstractWinFspFS {
     public FileInfo getDirInfoByName(FSP_FILE_SYSTEM fileSystem, String parentDirName, String fileName)
             throws NTStatusException {
         return null;
+    }
+
+    @Override
+    @NotImplemented
+    public byte[] getReparsePointData(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+        return null;
+    }
+
+    @Override
+    @NotImplemented
+    public void setReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName, byte[] reparseData, int reparseTag)
+            throws NTStatusException {
+    }
+
+    @Override
+    @NotImplemented
+    public void deleteReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+
     }
 }

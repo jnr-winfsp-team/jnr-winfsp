@@ -68,7 +68,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public WinFspMemFS(boolean verbose) {
         this.rootPath = Path.of("\\").normalize();
         this.objects = new HashMap<>();
-        this.objects.put(rootPath.toString(), new DirObj(null, rootPath, SECURITY_DESCRIPTOR));
+        this.objects.put(rootPath.toString(), new DirObj(null, rootPath, SECURITY_DESCRIPTOR, null, 0));
         this.volumeLabel = "MemFS";
 
         this.verboseOut = verbose ? System.out : new PrintStream(OutputStream.nullOutputStream());
@@ -104,7 +104,7 @@ public class WinFspMemFS extends WinFspStubFS {
             FileInfo info = obj.generateFileInfo();
             verboseOut.printf("== GET SECURITY BY NAME RETURNED == %s %s%n", securityDescriptor, info);
 
-            return new SecurityResult(securityDescriptor, info);
+            return new SecurityResult(securityDescriptor, EnumSet.copyOf(obj.getFileAttributes()));
         }
     }
 
@@ -115,10 +115,13 @@ public class WinFspMemFS extends WinFspStubFS {
                            int grantedAccess,
                            Set<FileAttributes> fileAttributes,
                            String securityDescriptor,
-                           long allocationSize) throws NTStatusException {
+                           long allocationSize,
+                           byte[] reparseData,
+                           int reparseTag) throws NTStatusException {
 
-        verboseOut.printf("== CREATE == %s co=%s ga=%X fa=%s sd=%s as=%d%n",
-                fileName, createOptions, grantedAccess, fileAttributes, securityDescriptor, allocationSize
+        verboseOut.printf("== CREATE == %s co=%s ga=%X fa=%s sd=%s as=%d rd=%s rt=%d%n",
+                fileName, createOptions, grantedAccess, fileAttributes, securityDescriptor, allocationSize,
+                Arrays.toString(reparseData), reparseTag
         );
         synchronized (objects) {
             Path filePath = getPath(fileName);
@@ -137,9 +140,9 @@ public class WinFspMemFS extends WinFspStubFS {
 
             MemoryObj obj;
             if (createOptions.contains(CreateOptions.FILE_DIRECTORY_FILE))
-                obj = new DirObj(parent, filePath, securityDescriptor);
+                obj = new DirObj(parent, filePath, securityDescriptor, reparseData, reparseTag);
             else {
-                var file = new FileObj(parent, filePath, securityDescriptor);
+                var file = new FileObj(parent, filePath, securityDescriptor, reparseData, reparseTag);
                 file.setAllocationSize(Math.toIntExact(allocationSize));
                 obj = file;
             }
@@ -528,6 +531,57 @@ public class WinFspMemFS extends WinFspStubFS {
         }
     }
 
+    @Override
+    public byte[] getReparsePointData(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+        verboseOut.printf("== GET REPARSE POINT DATA == %s%n", fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            MemoryObj memObj = getObject(filePath);
+
+            if (!memObj.getFileAttributes().contains(FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT))
+                throw new NTStatusException(0xC0000275); // STATUS_NOT_A_REPARSE_POINT
+
+            byte[] reparseData = memObj.getReparseData();
+            verboseOut.printf("== GET REPARSE POINT DATA RETURNED == %s%n", Arrays.toString(reparseData));
+
+            return reparseData;
+        }
+    }
+
+    @Override
+    public void setReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName, byte[] reparseData, int reparseTag) throws NTStatusException {
+        verboseOut.printf("== SET REPARSE POINT == %s rd=%s rt=%d%n",
+                fileName, Arrays.toString(reparseData), reparseTag
+        );
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            MemoryObj memObj = getObject(filePath);
+
+            if (isNotEmptyDirectory(memObj))
+                throw new NTStatusException(0xC0000101); // STATUS_DIRECTORY_NOT_EMPTY
+
+            memObj.setReparseData(reparseData);
+            memObj.setReparseTag(reparseTag);
+            memObj.getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT);
+        }
+    }
+
+    @Override
+    public void deleteReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+        verboseOut.printf("== DELETE REPARSE POINT == %s%n", fileName);
+        synchronized (objects) {
+            Path filePath = getPath(fileName);
+            MemoryObj memObj = getObject(filePath);
+
+            if (!memObj.getFileAttributes().contains(FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT))
+                throw new NTStatusException(0xC0000275); // STATUS_NOT_A_REPARSE_POINT
+
+            memObj.setReparseData(null);
+            memObj.setReparseTag(0);
+            memObj.getFileAttributes().remove(FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT);
+        }
+    }
+
     private boolean isNotEmptyDirectory(MemoryObj dir) {
         if (dir instanceof DirObj) {
             for (var obj : objects.values()) {
@@ -569,7 +623,7 @@ public class WinFspMemFS extends WinFspStubFS {
         if (!(parentObj instanceof DirObj))
             throw new NTStatusException(0xC0000103); // STATUS_NOT_A_DIRECTORY
 
-        return (DirObj)parentObj;
+        return (DirObj) parentObj;
     }
 
     private void putObject(MemoryObj obj) {

@@ -12,83 +12,76 @@ import java.util.Set;
 public abstract class MemoryObj {
     private final MemoryObj parent;
     private Path path;
-    private String securityDescriptor;
     private final Set<FileAttributes> fileAttributes;
+    private String securityDescriptor;
+    private byte[] reparseData;
+    private int reparseTag;
     private WinSysTime creationTime;
     private WinSysTime lastAccessTime;
     private WinSysTime lastWriteTime;
     private WinSysTime changeTime;
     private long indexNumber;
 
-    public MemoryObj(MemoryObj parent, Path path, String securityDescriptor) {
+    public MemoryObj(MemoryObj parent, Path path, String securityDescriptor, byte[] reparseData, int reparseTag) {
         this.parent = parent;
         this.path = Objects.requireNonNull(path);
-        this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
         this.fileAttributes = EnumSet.noneOf(FileAttributes.class);
+        this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
+        this.reparseData = reparseData;
+        this.reparseTag = reparseTag;
         WinSysTime now = WinSysTime.now();
         this.creationTime = now;
         this.lastAccessTime = now;
         this.lastWriteTime = now;
         this.changeTime = now;
         this.indexNumber = 0;
+
+        if (reparseData != null)
+            fileAttributes.add(FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT);
     }
 
-    public Path getPath() {
+    public final Path getPath() {
         return path;
     }
 
-    public String getName() {
+    public final String getName() {
         return path.getNameCount() > 0 ? path.getFileName().toString() : null;
     }
 
-    public void setPath(Path path) {
+    public final void setPath(Path path) {
         this.path = Objects.requireNonNull(path);
     }
 
-    public String getSecurityDescriptor() {
-        return securityDescriptor;
-    }
-
-    public void setSecurityDescriptor(String securityDescriptor) {
-        this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
-    }
-
-    public MemoryObj getParent() {
+    public final MemoryObj getParent() {
         return parent;
-    }
-
-    public FileInfo generateFileInfo() {
-        return generateFileInfo(getPath().toString());
-    }
-
-    public FileInfo generateFileInfo(String filePath) {
-        FileInfo res = new FileInfo(filePath);
-        res.getFileAttributes().addAll(fileAttributes);
-        res.setAllocationSize(getAllocationSize());
-        res.setFileSize(getFileSize());
-        res.setCreationTime(creationTime);
-        res.setLastAccessTime(lastAccessTime);
-        res.setLastWriteTime(lastWriteTime);
-        res.setChangeTime(changeTime);
-        res.setIndexNumber(indexNumber);
-        return res;
-    }
-
-    public void touch() {
-        WinSysTime now = WinSysTime.now();
-        setAccessTime(now);
-        setWriteTime(now);
-        setChangeTime(now);
-    }
-
-    public void touchParent() {
-        MemoryObj parent = getParent();
-        if (parent != null)
-            parent.touch();
     }
 
     public final Set<FileAttributes> getFileAttributes() {
         return fileAttributes;
+    }
+
+    public final String getSecurityDescriptor() {
+        return securityDescriptor;
+    }
+
+    public final void setSecurityDescriptor(String securityDescriptor) {
+        this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
+    }
+
+    public final byte[] getReparseData() {
+        return reparseData;
+    }
+
+    public final void setReparseData(byte[] reparseData) {
+        this.reparseData = reparseData;
+    }
+
+    public final int getReparseTag() {
+        return reparseTag;
+    }
+
+    public final void setReparseTag(int reparseTag) {
+        this.reparseTag = reparseTag;
     }
 
     public final void setCreationTime(WinSysTime time) {
@@ -114,4 +107,36 @@ public abstract class MemoryObj {
     public abstract int getAllocationSize();
 
     public abstract int getFileSize();
+
+
+    public final FileInfo generateFileInfo() {
+        return generateFileInfo(getPath().toString());
+    }
+
+    public final FileInfo generateFileInfo(String filePath) {
+        FileInfo res = new FileInfo(filePath);
+        res.getFileAttributes().addAll(fileAttributes);
+        res.setAllocationSize(getAllocationSize());
+        res.setFileSize(getFileSize());
+        res.setCreationTime(creationTime);
+        res.setLastAccessTime(lastAccessTime);
+        res.setLastWriteTime(lastWriteTime);
+        res.setChangeTime(changeTime);
+        res.setReparseTag(reparseTag);
+        res.setIndexNumber(indexNumber);
+        return res;
+    }
+
+    public final void touch() {
+        WinSysTime now = WinSysTime.now();
+        setAccessTime(now);
+        setWriteTime(now);
+        setChangeTime(now);
+    }
+
+    public final void touchParent() {
+        MemoryObj parent = getParent();
+        if (parent != null)
+            parent.touch();
+    }
 }

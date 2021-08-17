@@ -1,22 +1,25 @@
 package com.github.jnrwinfspteam.jnrwinfsp.result;
 
+import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
+
 import java.util.Objects;
+import java.util.Set;
 
 public final class SecurityResult {
 
     private final String securityDescriptor;
-    private final FileInfo fileInfo;
+    private final Set<FileAttributes> fileAttributes;
 
-    public SecurityResult(String securityDescriptor, FileInfo fileInfo) {
+    public SecurityResult(String securityDescriptor, Set<FileAttributes> fileAttributes) {
         this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
-        this.fileInfo = Objects.requireNonNull(fileInfo);
+        this.fileAttributes = Objects.requireNonNull(fileAttributes);
     }
 
     public String getSecurityDescriptor() {
         return securityDescriptor;
     }
 
-    public FileInfo getFileInfo() {
-        return fileInfo;
+    public Set<FileAttributes> getFileAttributes() {
+        return fileAttributes;
     }
 }

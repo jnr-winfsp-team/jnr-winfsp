@@ -16,8 +16,8 @@ public class FSP_FILE_SYSTEM_INTERFACE extends Struct {
     public final Struct.Function<WinFspCallbacks.GetSecurityByNameCallback> GetSecurityByName =
             function(WinFspCallbacks.GetSecurityByNameCallback.class);
 
-    public final Struct.Function<WinFspCallbacks.CreateCallback> Create =
-            function(WinFspCallbacks.CreateCallback.class);
+    public final Struct.Function<WinFspCallbacks.CreateExCallback> CreateEx =
+            function(WinFspCallbacks.CreateExCallback.class);
 
     public final Struct.Function<WinFspCallbacks.OpenCallback> Open =
             function(WinFspCallbacks.OpenCallback.class);
@@ -64,12 +64,24 @@ public class FSP_FILE_SYSTEM_INTERFACE extends Struct {
     public final Struct.Function<WinFspCallbacks.ReadDirectoryCallback> ReadDirectory =
             function(WinFspCallbacks.ReadDirectoryCallback.class);
 
+    public final Struct.Function<WinFspCallbacks.ResolveReparsePointsCallback> ResolveReparsePoints =
+            function(WinFspCallbacks.ResolveReparsePointsCallback.class);
+
+    public final Struct.Function<WinFspCallbacks.GetReparsePointCallback> GetReparsePoint =
+            function(WinFspCallbacks.GetReparsePointCallback.class);
+
+    public final Struct.Function<WinFspCallbacks.SetReparsePointCallback> SetReparsePoint =
+            function(WinFspCallbacks.SetReparsePointCallback.class);
+
+    public final Struct.Function<WinFspCallbacks.DeleteReparsePointCallback> DeleteReparsePoint =
+            function(WinFspCallbacks.DeleteReparsePointCallback.class);
+
     {
         // NOTE: this ensures that the interface struct is correctly defined.
-        // A stand-in for 5 unsupported operations.
-        for (int i = 0; i < 5; i++) {
+        // A stand-in for 1 unsupported operation.
+        for (int i = 0; i < 1; i++) {
             // actual function is irrelevant here, we just need the function pointers
-            function(WinFspCallbacks.ReadDirectoryCallback.class);
+            function(WinFspCallbacks.DeleteReparsePointCallback.class);
         }
     }
 

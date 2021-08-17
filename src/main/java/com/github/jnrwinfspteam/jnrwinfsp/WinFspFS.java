@@ -55,6 +55,8 @@ public interface WinFspFS extends Mountable {
      * @param securityDescriptorString Security descriptor string to apply to the newly created file or directory. This security
      *                                 descriptor will always be in self-relative format. Will be NULL for named streams.
      * @param allocationSize           Allocation size for the newly created file.
+     * @param reparsePointData         (optional) Reparse point data
+     * @param reparseTag               (optional) Reparse tag
      */
     FileInfo create(FSP_FILE_SYSTEM fileSystem,
                     String fileName,
@@ -62,7 +64,9 @@ public interface WinFspFS extends Mountable {
                     int grantedAccess,
                     Set<FileAttributes> fileAttributes,
                     String securityDescriptorString,
-                    long allocationSize
+                    long allocationSize,
+                    byte[] reparsePointData,
+                    int reparseTag
     ) throws NTStatusException;
 
     /**
@@ -352,4 +356,31 @@ public interface WinFspFS extends Mountable {
      */
     FileInfo getDirInfoByName(FSP_FILE_SYSTEM fileSystem, String parentDirName, String fileName)
             throws NTStatusException;
+
+    /**
+     * Get reparse point data.
+     *
+     * @param fileSystem The file system on which this request is posted
+     * @param fileName   The name of the file or directory to be read.
+     */
+    byte[] getReparsePointData(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+
+    /**
+     * Sets a reparse point.
+     *
+     * @param fileSystem  The file system on which this request is posted
+     * @param fileName    The name of the file or directory to be read
+     * @param reparseData The reparse point data
+     * @param reparseTag  The reparse point tag
+     */
+    void setReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName, byte[] reparseData, int reparseTag)
+            throws NTStatusException;
+
+    /**
+     * Deletes a reparse point.
+     *
+     * @param fileSystem The file system on which this request is posted
+     * @param fileName   The name of the file or directory to be read
+     */
+    void deleteReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
 }

@@ -575,7 +575,7 @@ public class WinFspMemFS extends WinFspStubFS {
     private FileObj getFileObject(Path filePath) throws NTStatusException {
         MemoryObj obj = getObject(filePath);
         if (!(obj instanceof FileObj))
-            throw new NTStatusException(0xC000000D); // STATUS_INVALID_PARAMETER
+            throw new NTStatusException(0xC00000BA); // STATUS_FILE_IS_A_DIRECTORY
 
         return (FileObj) obj;
     }

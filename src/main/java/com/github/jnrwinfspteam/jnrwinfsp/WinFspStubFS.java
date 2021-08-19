@@ -9,6 +9,7 @@ import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -31,7 +32,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public SecurityResult getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public Optional<SecurityResult> getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
         return null;
     }
 

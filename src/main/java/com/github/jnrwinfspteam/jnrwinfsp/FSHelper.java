@@ -8,6 +8,7 @@ import com.github.jnrwinfspteam.jnrwinfsp.result.*;
 import com.github.jnrwinfspteam.jnrwinfsp.struct.*;
 import com.github.jnrwinfspteam.jnrwinfsp.util.Pointered;
 import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
+import jnr.ffi.NativeType;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 import jnr.ffi.Struct;
@@ -17,8 +18,12 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 
 final class FSHelper {
+
+    private static Runtime RUNTIME = Runtime.getSystemRuntime();
+
     static void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.GetVolumeInfo.set((pFS, pVolumeInfo) -> {
             try {
@@ -62,16 +67,31 @@ final class FSHelper {
         fsi.GetSecurityByName.set((pFS, pFileName, pFileAttributes, pSecurityDescriptor, pSecurityDescriptorSize) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
-                SecurityResult res = winfsp.getSecurityByName(fs(pFS), fileName);
+                Optional<SecurityResult> opSR = winfsp.getSecurityByName(fs(pFS), fileName);
+                if (opSR.isEmpty()) {
+                    byte res = libWinFsp.FspFileSystemFindReparsePoint(
+                            pFS,
+                            newGetReparsePointByNameCallback(winfsp),
+                            null,
+                            pFileName,
+                            pFileAttributes // this stores the reparse point index in case res is TRUE
+                    );
 
+                    if (bool(res))
+                        return 0x00000104; // STATUS_REPARSE
+                    else
+                        return 0xC0000034; // STATUS_OBJECT_NAME_NOT_FOUND
+                }
+
+                SecurityResult sr = opSR.orElseThrow();
                 if (pFileAttributes != null)
-                    pFileAttributes.putInt(0, FileAttributes.intOf(res.getFileAttributes()));
+                    pFileAttributes.putInt(0, FileAttributes.intOf(sr.getFileAttributes()));
 
                 SecurityUtils.fromString(
                         libWinFsp,
                         libKernel32,
                         libAdvapi32,
-                        res.getSecurityDescriptor(),
+                        sr.getSecurityDescriptor(),
                         pSecurityDescriptor,
                         pSecurityDescriptorSize
                 );
@@ -507,7 +527,7 @@ final class FSHelper {
     }
 
     private static LibWinFsp.GetReparsePointByNameCallback newGetReparsePointByNameCallback(WinFspFS winfsp) {
-        return ((pFS, _pContext, pFileName, _isDirectory, pBuffer, pSize) -> {
+        return ((pFS, _pContext, pFileName, _isDirectory, _pBuffer, _pSize) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
                 winfsp.getReparsePointData(fs(pFS), fileName);
@@ -606,12 +626,12 @@ final class FSHelper {
     }
 
     private static void putFileContext(Pointer ppFileContext, String fileName) {
-        Pointer p = StringUtils.toPointer(Runtime.getSystemRuntime(), fileName, true);
+        Pointer p = StringUtils.toPointer(RUNTIME, fileName, true);
         ppFileContext.putPointer(0, p);
     }
 
     private static Pointer tempPointerFromBytes(byte[] bytes) {
-        Pointer p = Runtime.getSystemRuntime().getMemoryManager().allocateTemporary(bytes.length, true);
+        Pointer p = RUNTIME.getMemoryManager().allocateTemporary(bytes.length, true);
         p.put(0, bytes, 0, bytes.length);
         return p;
     }

@@ -9,6 +9,7 @@ import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
 import jnr.ffi.Pointer;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface WinFspFS extends Mountable {
@@ -29,11 +30,12 @@ public interface WinFspFS extends Mountable {
 
     /**
      * Get file or directory security descriptor string, and file attributes.
+     * If the file or directory does not exist, then an empty optional must be returned.
      *
      * @param fileSystem The file system on which this request is posted.
      * @param fileName   The name of the file or directory to get the security descriptor and attributes for.
      */
-    SecurityResult getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    Optional<SecurityResult> getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
 
     /**
      * Create new file or directory.

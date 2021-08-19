@@ -94,17 +94,19 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public SecurityResult getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public Optional<SecurityResult> getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
         verboseOut.printf("== GET SECURITY BY NAME == %s%n", fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
-            MemoryObj obj = getObject(filePath);
+            if (!hasObject(filePath))
+                return Optional.empty();
 
+            MemoryObj obj = getObject(filePath);
             String securityDescriptor = obj.getSecurityDescriptor();
             FileInfo info = obj.generateFileInfo();
             verboseOut.printf("== GET SECURITY BY NAME RETURNED == %s %s%n", securityDescriptor, info);
 
-            return new SecurityResult(securityDescriptor, EnumSet.copyOf(obj.getFileAttributes()));
+            return Optional.of(new SecurityResult(securityDescriptor, EnumSet.copyOf(obj.getFileAttributes())));
         }
     }
 

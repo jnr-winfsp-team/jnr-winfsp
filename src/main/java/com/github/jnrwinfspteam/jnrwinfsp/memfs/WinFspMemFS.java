@@ -485,15 +485,14 @@ public class WinFspMemFS extends WinFspStubFS {
                 if (marker == null || marker.equals(".")) {
                     DirObj parentDir = getParentObject(filePath);
                     entries.add(parentDir.generateFileInfo(".."));
+                    marker = null;
                 }
             }
 
             // include only direct children with relative names
             for (var obj : objects.values()) {
-                Path parent = obj.getPath().getParent();
-                if (parent != null
-                        && parent.equals(dir.getPath())
-                        && !obj.getPath().equals(dir.getPath())) {
+                MemoryObj parent = obj.getParent();
+                if (parent != null && parent.getPath().equals(dir.getPath())) {
                     entries.add(obj.generateFileInfo(obj.getName()));
                 }
             }
@@ -503,8 +502,9 @@ public class WinFspMemFS extends WinFspStubFS {
 
             // filter out all results before the marker, if it's set
             if (marker != null) {
+                final String marker_ = marker;
                 entries = entries.stream()
-                        .dropWhile(e -> NATURAL_ORDER.compare(e.getFileName(), marker) <= 0)
+                        .dropWhile(e -> NATURAL_ORDER.compare(e.getFileName(), marker_) <= 0)
                         .collect(Collectors.toList());
             }
 

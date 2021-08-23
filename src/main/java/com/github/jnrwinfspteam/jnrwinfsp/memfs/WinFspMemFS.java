@@ -56,8 +56,10 @@ public class WinFspMemFS extends WinFspStubFS {
     private static final long MAX_FILE_SIZE = 16 * 1024 * 1024;
 
     private final Path rootPath;
-    private String volumeLabel;
     private final Map<String, MemoryObj> objects;
+
+    private long nextIndexNumber;
+    private String volumeLabel;
 
     private final PrintStream verboseOut;
 
@@ -69,6 +71,8 @@ public class WinFspMemFS extends WinFspStubFS {
         this.rootPath = Path.of("\\").normalize();
         this.objects = new HashMap<>();
         this.objects.put(rootPath.toString(), new DirObj(null, rootPath, SECURITY_DESCRIPTOR, null, 0));
+
+        this.nextIndexNumber = 1L;
         this.volumeLabel = "MemFS";
 
         this.verboseOut = verbose ? System.out : new PrintStream(OutputStream.nullOutputStream());
@@ -150,6 +154,7 @@ public class WinFspMemFS extends WinFspStubFS {
             }
 
             obj.getFileAttributes().addAll(fileAttributes);
+            obj.setIndexNumber(nextIndexNumber++);
             putObject(obj);
 
             FileInfo info = obj.generateFileInfo();

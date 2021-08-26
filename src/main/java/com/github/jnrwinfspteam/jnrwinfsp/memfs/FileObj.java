@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 public class FileObj extends MemoryObj {
-    private static final int ALLOCATION_UNIT = 4096;
+    private static final int ALLOCATION_UNIT = 512;
 
     private byte[] data;
     private int fileSize;

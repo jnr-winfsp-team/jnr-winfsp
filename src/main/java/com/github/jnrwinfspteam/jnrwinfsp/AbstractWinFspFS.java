@@ -133,10 +133,10 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         FSP_FSCTL_VOLUME_PARAMS vp = volumeParamsP.get();
 
         // TODO set these as configurable
-        vp.SectorSize.set(4096);
+        vp.SectorSize.set(512);
         vp.SectorsPerAllocationUnit.set(1);
         vp.VolumeCreationTime.set(WinSysTime.now().get());
-        vp.VolumeSerialNumber.set(0);
+        vp.VolumeSerialNumber.set(WinSysTime.now().get() / (10000 * 1000));
         vp.FileInfoTimeout.set(1000);
         vp.setFileSystemAttribute(FSAttr.UnicodeOnDisk, true);
         vp.setFileSystemAttribute(FSAttr.PersistentAcls, true);
@@ -148,6 +148,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsUserContext2, true);
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsFullContext, false);
         vp.setFileSystemAttribute(FSAttr.AllowOpenInKernelMode, true);
+        vp.setFileSystemAttribute(FSAttr.RejectIrpPriorToTransact0, true);
 
         switch (fsCaseOption) {
             case CASE_SENSITIVE:

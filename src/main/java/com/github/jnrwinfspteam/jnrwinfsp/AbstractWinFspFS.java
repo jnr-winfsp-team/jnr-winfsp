@@ -61,15 +61,15 @@ public abstract class AbstractWinFspFS implements WinFspFS {
     }
 
     @Override
-    public void mountLocalDrive(Path mountPoint, FSCaseOption fsCaseOption, boolean debug) throws MountException {
-        Objects.requireNonNull(fsCaseOption);
+    public void mountLocalDrive(Path mountPoint, MountOptions options) throws MountException {
+        Objects.requireNonNull(options);
         synchronized (mountLock) {
             if (mounted)
                 throw new MountException("WinFsp local drive is already mounted");
 
             try {
                 Runtime runtime = Runtime.getSystemRuntime();
-                initVolumeParams(runtime, fsCaseOption);
+                initVolumeParams(runtime, options);
                 initFSInterface(runtime);
 
                 var ppFileSystem = new PointerByReference();
@@ -81,7 +81,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
                 ));
                 pFileSystem = ppFileSystem.getValue();
 
-                if (debug) {
+                if (options.debug) {
                     Pointer stdErrHandle = libKernel32.GetStdHandle(LibKernel32.STD_ERROR_HANDLE);
                     libWinFsp.FspDebugLogSetHandle(stdErrHandle);
                     libWinFsp.FspFileSystemSetDebugLogF(pFileSystem, -1);
@@ -128,13 +128,12 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         }
     }
 
-    private void initVolumeParams(Runtime runtime, FSCaseOption fsCaseOption) {
+    private void initVolumeParams(Runtime runtime, MountOptions options) {
         volumeParamsP = FSP_FSCTL_VOLUME_PARAMS.create(runtime);
         FSP_FSCTL_VOLUME_PARAMS vp = volumeParamsP.get();
 
-        // TODO set these as configurable
-        vp.SectorSize.set(512);
-        vp.SectorsPerAllocationUnit.set(1);
+        vp.SectorSize.set(options.sectorSize);
+        vp.SectorsPerAllocationUnit.set(options.sectorsPerAllocationUnit);
         vp.VolumeCreationTime.set(WinSysTime.now().get());
         vp.VolumeSerialNumber.set(WinSysTime.now().get() / (10000 * 1000));
         vp.FileInfoTimeout.set(1000);
@@ -150,7 +149,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.setFileSystemAttribute(FSAttr.AllowOpenInKernelMode, true);
         vp.setFileSystemAttribute(FSAttr.RejectIrpPriorToTransact0, true);
 
-        switch (fsCaseOption) {
+        switch (options.caseOption) {
             case CASE_SENSITIVE:
                 vp.setFileSystemAttribute(FSAttr.CaseSensitiveSearch, true);
                 vp.setFileSystemAttribute(FSAttr.CasePreservedNames, true);

@@ -1,6 +1,7 @@
 package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
 import com.github.jnrwinfspteam.jnrwinfsp.MountException;
+import com.github.jnrwinfspteam.jnrwinfsp.MountOptions;
 import com.github.jnrwinfspteam.jnrwinfsp.NTStatusException;
 import com.github.jnrwinfspteam.jnrwinfsp.WinFspStubFS;
 import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
@@ -32,7 +33,12 @@ public class WinFspMemFS extends WinFspStubFS {
 
         var memFS = new WinFspMemFS();
         System.out.printf("Mounting %s ...%n", mountPoint == null ? "" : mountPoint);
-        memFS.mountLocalDrive(mountPoint, FSCaseOption.CASE_SENSITIVE, false);
+        memFS.mountLocalDrive(mountPoint, new MountOptions()
+                .setDebug(false)
+                .setCase(MountOptions.CaseOption.CASE_SENSITIVE)
+                .setSectorSize(4096)
+                .setSectorsPerAllocationUnit(1)
+        );
         System.out.println("Mounted");
         try {
             System.out.println("<Press Enter to quit>");

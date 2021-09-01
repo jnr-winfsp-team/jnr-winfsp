@@ -8,6 +8,8 @@ public class MountOptions {
     CaseOption caseOption = CaseOption.CASE_SENSITIVE;
     int sectorSize = 4096;
     int sectorsPerAllocationUnit = 1;
+    long fileInfoTimeout = 1000;
+    boolean wslFeatures = true;
 
     /**
      * Sets "debug" option (default is {@code false}).
@@ -47,6 +49,25 @@ public class MountOptions {
     public MountOptions setSectorsPerAllocationUnit(int sectorsPerAllocationUnit) {
         this.sectorsPerAllocationUnit = sectorsPerAllocationUnit;
         return this;
+    }
+
+    /**
+     * Sets "file-info timeout" option (default is 1000).
+     *
+     * @param fileInfoTimeout FileInfo/Security/VolumeInfo timeout (in milliseconds)
+     */
+    public MountOptions setFileInfoTimeout(long fileInfoTimeout) {
+        this.fileInfoTimeout = fileInfoTimeout;
+        return this;
+    }
+
+    /**
+     * Sets "WSL feature" option (default is {@code true}).
+     *
+     * @param wslFeatures If true, then WSLinux features will be enabled
+     */
+    public void setWslFeatures(boolean wslFeatures) {
+        this.wslFeatures = wslFeatures;
     }
 
     /**

@@ -136,7 +136,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.SectorsPerAllocationUnit.set(options.sectorsPerAllocationUnit);
         vp.VolumeCreationTime.set(WinSysTime.now().get());
         vp.VolumeSerialNumber.set(WinSysTime.now().get() / (10000 * 1000));
-        vp.FileInfoTimeout.set(1000);
+        vp.FileInfoTimeout.set(options.fileInfoTimeout);
         vp.setFileSystemAttribute(FSAttr.UnicodeOnDisk, true);
         vp.setFileSystemAttribute(FSAttr.PersistentAcls, true);
         vp.setFileSystemAttribute(FSAttr.ReparsePoints, true);
@@ -148,6 +148,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsFullContext, false);
         vp.setFileSystemAttribute(FSAttr.AllowOpenInKernelMode, true);
         vp.setFileSystemAttribute(FSAttr.RejectIrpPriorToTransact0, true);
+        vp.setFileSystemAttribute(FSAttr.WslFeatures, options.wslFeatures);
 
         switch (options.caseOption) {
             case CASE_SENSITIVE:

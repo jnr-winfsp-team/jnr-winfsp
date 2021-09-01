@@ -2,6 +2,7 @@ package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
 import com.github.jnrwinfspteam.jnrwinfsp.api.FileAttributes;
 import com.github.jnrwinfspteam.jnrwinfsp.api.FileInfo;
+import com.github.jnrwinfspteam.jnrwinfsp.api.ReparsePoint;
 import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 
 import java.nio.file.Path;
@@ -22,13 +23,13 @@ public abstract class MemoryObj {
     private WinSysTime changeTime;
     private long indexNumber;
 
-    public MemoryObj(MemoryObj parent, Path path, String securityDescriptor, byte[] reparseData, int reparseTag) {
+    public MemoryObj(MemoryObj parent, Path path, String securityDescriptor, ReparsePoint reparsePoint) {
         this.parent = parent;
         this.path = Objects.requireNonNull(path);
         this.fileAttributes = EnumSet.noneOf(FileAttributes.class);
         this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
-        this.reparseData = reparseData;
-        this.reparseTag = reparseTag;
+        this.reparseData = null;
+        this.reparseTag = 0;
         WinSysTime now = WinSysTime.now();
         this.creationTime = now;
         this.lastAccessTime = now;
@@ -36,8 +37,11 @@ public abstract class MemoryObj {
         this.changeTime = now;
         this.indexNumber = 0;
 
-        if (reparseData != null)
+        if (reparsePoint != null) {
+            this.reparseData = reparsePoint.getData();
+            this.reparseTag = reparsePoint.getTag();
             fileAttributes.add(FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT);
+        }
     }
 
     public final Path getPath() {

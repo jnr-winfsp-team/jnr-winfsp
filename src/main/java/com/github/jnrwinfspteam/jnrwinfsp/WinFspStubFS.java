@@ -42,8 +42,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
                            Set<FileAttributes> fileAttributes,
                            String securityDescriptorString,
                            long allocationSize,
-                           byte[] reparseData,
-                           int reparseTag) throws NTStatusException {
+                           ReparsePoint reparsePoint) throws NTStatusException {
         return null;
     }
 

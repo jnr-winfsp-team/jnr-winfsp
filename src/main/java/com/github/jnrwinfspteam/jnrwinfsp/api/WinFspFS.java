@@ -52,8 +52,7 @@ public interface WinFspFS extends Mountable {
      * @param securityDescriptorString Security descriptor string to apply to the newly created file or directory. This security
      *                                 descriptor will always be in self-relative format. Will be NULL for named streams.
      * @param allocationSize           Allocation size for the newly created file.
-     * @param reparsePointData         (optional) Reparse point data
-     * @param reparseTag               (optional) Reparse tag
+     * @param reparsePoint             (optional) Reparse point
      */
     FileInfo create(FSP_FILE_SYSTEM fileSystem,
                     String fileName,
@@ -62,8 +61,7 @@ public interface WinFspFS extends Mountable {
                     Set<FileAttributes> fileAttributes,
                     String securityDescriptorString,
                     long allocationSize,
-                    byte[] reparsePointData,
-                    int reparseTag
+                    ReparsePoint reparsePoint
     ) throws NTStatusException;
 
     /**

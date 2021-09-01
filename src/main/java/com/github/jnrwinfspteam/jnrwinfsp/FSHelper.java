@@ -119,13 +119,13 @@ final class FSHelper {
                         pSecurityDescriptor
                 );
 
-                byte[] reparsePointData = null;
-                int reparseTag = 0;
+                ReparsePoint reparsePoint = null;
                 if (pExtraBuffer != null && bool(extraBufferIsReparsePoint)) {
-                    reparsePointData = new byte[(int) extraLength];
+                    byte[] reparsePointData = new byte[(int) extraLength];
                     pExtraBuffer.get(0, reparsePointData, 0, reparsePointData.length);
                     /* the first field in a reparse buffer is the reparse tag */
-                    reparseTag = pExtraBuffer.getInt(0);
+                    int reparseTag = pExtraBuffer.getInt(0);
+                    reparsePoint = new ReparsePoint(reparsePointData, reparseTag);
                 }
 
                 FileInfo fi = winfsp.create(
@@ -136,8 +136,7 @@ final class FSHelper {
                         FileAttributes.setOf(fileAttributes),
                         securityDescriptorStr,
                         allocationSize,
-                        reparsePointData,
-                        reparseTag
+                        reparsePoint
                 );
 
                 putOpenFileInfo(pFileInfo, fi);

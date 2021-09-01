@@ -1,19 +1,9 @@
 package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
-import com.github.jnrwinfspteam.jnrwinfsp.api.MountException;
-import com.github.jnrwinfspteam.jnrwinfsp.api.MountOptions;
-import com.github.jnrwinfspteam.jnrwinfsp.api.NTStatusException;
+import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.WinFspStubFS;
-import com.github.jnrwinfspteam.jnrwinfsp.api.CleanupFlags;
-import com.github.jnrwinfspteam.jnrwinfsp.api.CreateOptions;
-import com.github.jnrwinfspteam.jnrwinfsp.api.FileAttributes;
-import com.github.jnrwinfspteam.jnrwinfsp.api.FileInfo;
-import com.github.jnrwinfspteam.jnrwinfsp.api.SecurityResult;
-import com.github.jnrwinfspteam.jnrwinfsp.api.VolumeInfo;
-import com.github.jnrwinfspteam.jnrwinfsp.api.WriteResult;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM;
 import com.github.jnrwinfspteam.jnrwinfsp.util.NaturalOrderComparator;
-import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.Pointer;
 
 import java.io.*;
@@ -75,7 +65,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public WinFspMemFS(boolean verbose) {
         this.rootPath = Path.of("\\").normalize();
         this.objects = new HashMap<>();
-        this.objects.put(rootPath.toString(), new DirObj(null, rootPath, SECURITY_DESCRIPTOR, null, 0));
+        this.objects.put(rootPath.toString(), new DirObj(null, rootPath, SECURITY_DESCRIPTOR, null));
 
         this.nextIndexNumber = 1L;
         this.volumeLabel = "MemFS";
@@ -127,12 +117,10 @@ public class WinFspMemFS extends WinFspStubFS {
                            Set<FileAttributes> fileAttributes,
                            String securityDescriptor,
                            long allocationSize,
-                           byte[] reparseData,
-                           int reparseTag) throws NTStatusException {
+                           ReparsePoint reparsePoint) throws NTStatusException {
 
-        verboseOut.printf("== CREATE == %s co=%s ga=%X fa=%s sd=%s as=%d rd=%s rt=%d%n",
-                fileName, createOptions, grantedAccess, fileAttributes, securityDescriptor, allocationSize,
-                Arrays.toString(reparseData), reparseTag
+        verboseOut.printf("== CREATE == %s co=%s ga=%X fa=%s sd=%s as=%d rp=%s%n",
+                fileName, createOptions, grantedAccess, fileAttributes, securityDescriptor, allocationSize, reparsePoint
         );
         synchronized (objects) {
             Path filePath = getPath(fileName);
@@ -151,9 +139,9 @@ public class WinFspMemFS extends WinFspStubFS {
 
             MemoryObj obj;
             if (createOptions.contains(CreateOptions.FILE_DIRECTORY_FILE))
-                obj = new DirObj(parent, filePath, securityDescriptor, reparseData, reparseTag);
+                obj = new DirObj(parent, filePath, securityDescriptor, reparsePoint);
             else {
-                var file = new FileObj(parent, filePath, securityDescriptor, reparseData, reparseTag);
+                var file = new FileObj(parent, filePath, securityDescriptor, reparsePoint);
                 file.setAllocationSize(Math.toIntExact(allocationSize));
                 obj = file;
             }

@@ -2,6 +2,7 @@ package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
 import com.github.jnrwinfspteam.jnrwinfsp.api.NTStatusException;
 import com.github.jnrwinfspteam.jnrwinfsp.api.FileAttributes;
+import com.github.jnrwinfspteam.jnrwinfsp.api.ReparsePoint;
 import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.Pointer;
 
@@ -14,8 +15,8 @@ public class FileObj extends MemoryObj {
     private byte[] data;
     private int fileSize;
 
-    public FileObj(DirObj parent, Path path, String securityDescriptor, byte[] reparseData, int reparseTag) {
-        super(parent, path, securityDescriptor, reparseData, reparseTag);
+    public FileObj(DirObj parent, Path path, String securityDescriptor, ReparsePoint reparsePoint) {
+        super(parent, path, securityDescriptor, reparsePoint);
         this.data = new byte[0];
         this.fileSize = 0;
         getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_ARCHIVE);

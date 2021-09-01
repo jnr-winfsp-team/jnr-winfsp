@@ -1,13 +1,14 @@
 package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
 import com.github.jnrwinfspteam.jnrwinfsp.api.FileAttributes;
+import com.github.jnrwinfspteam.jnrwinfsp.api.ReparsePoint;
 
 import java.nio.file.Path;
 
 public class DirObj extends MemoryObj {
 
-    public DirObj(DirObj parent, Path path, String securityDescriptor, byte[] reparseData, int reparseTag) {
-        super(parent, path, securityDescriptor, reparseData, reparseTag);
+    public DirObj(DirObj parent, Path path, String securityDescriptor, ReparsePoint reparsePoint) {
+        super(parent, path, securityDescriptor, reparsePoint);
         getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
     }
 

@@ -36,7 +36,7 @@ public class WinFspMemFS extends WinFspStubFS {
         memFS.mountLocalDrive(mountPoint, new MountOptions()
                 .setDebug(false)
                 .setCase(MountOptions.CaseOption.CASE_SENSITIVE)
-                .setSectorSize(4096)
+                .setSectorSize(512)
                 .setSectorsPerAllocationUnit(1)
         );
         System.out.println("Mounted");

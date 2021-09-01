@@ -66,8 +66,9 @@ public class MountOptions {
      *
      * @param wslFeatures If true, then WSLinux features will be enabled
      */
-    public void setWslFeatures(boolean wslFeatures) {
+    public MountOptions setWslFeatures(boolean wslFeatures) {
         this.wslFeatures = wslFeatures;
+        return this;
     }
 
     /**

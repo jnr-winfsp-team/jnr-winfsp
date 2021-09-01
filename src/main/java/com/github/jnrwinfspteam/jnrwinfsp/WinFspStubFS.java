@@ -1,11 +1,8 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
-import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
-import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
-import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
-import com.github.jnrwinfspteam.jnrwinfsp.result.*;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
-import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
+import com.github.jnrwinfspteam.jnrwinfsp.api.*;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM;
+import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.Pointer;
 
 import java.util.List;

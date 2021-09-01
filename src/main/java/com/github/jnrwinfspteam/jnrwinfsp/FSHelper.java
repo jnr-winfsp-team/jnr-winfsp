@@ -1,14 +1,12 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
-import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
-import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
-import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
-import com.github.jnrwinfspteam.jnrwinfsp.lib.*;
-import com.github.jnrwinfspteam.jnrwinfsp.result.*;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.*;
-import com.github.jnrwinfspteam.jnrwinfsp.util.Pointered;
-import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
-import jnr.ffi.NativeType;
+import com.github.jnrwinfspteam.jnrwinfsp.api.*;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.*;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.*;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.SecurityUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
+import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 import jnr.ffi.Struct;
@@ -22,7 +20,7 @@ import java.util.Optional;
 
 final class FSHelper {
 
-    private static Runtime RUNTIME = Runtime.getSystemRuntime();
+    private static final Runtime RUNTIME = Runtime.getSystemRuntime();
 
     static void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
         fsi.GetVolumeInfo.set((pFS, pVolumeInfo) -> {

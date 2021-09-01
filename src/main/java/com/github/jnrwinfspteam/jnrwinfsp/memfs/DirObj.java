@@ -1,6 +1,6 @@
 package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
-import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
+import com.github.jnrwinfspteam.jnrwinfsp.api.FileAttributes;
 
 import java.nio.file.Path;
 

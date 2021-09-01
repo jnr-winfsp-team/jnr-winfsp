@@ -1,24 +1,23 @@
 package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
-import com.github.jnrwinfspteam.jnrwinfsp.MountException;
-import com.github.jnrwinfspteam.jnrwinfsp.MountOptions;
-import com.github.jnrwinfspteam.jnrwinfsp.NTStatusException;
+import com.github.jnrwinfspteam.jnrwinfsp.api.MountException;
+import com.github.jnrwinfspteam.jnrwinfsp.api.MountOptions;
+import com.github.jnrwinfspteam.jnrwinfsp.api.NTStatusException;
 import com.github.jnrwinfspteam.jnrwinfsp.WinFspStubFS;
-import com.github.jnrwinfspteam.jnrwinfsp.flags.CleanupFlags;
-import com.github.jnrwinfspteam.jnrwinfsp.flags.CreateOptions;
-import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
-import com.github.jnrwinfspteam.jnrwinfsp.result.FileInfo;
-import com.github.jnrwinfspteam.jnrwinfsp.result.SecurityResult;
-import com.github.jnrwinfspteam.jnrwinfsp.result.VolumeInfo;
-import com.github.jnrwinfspteam.jnrwinfsp.result.WriteResult;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FILE_SYSTEM;
+import com.github.jnrwinfspteam.jnrwinfsp.api.CleanupFlags;
+import com.github.jnrwinfspteam.jnrwinfsp.api.CreateOptions;
+import com.github.jnrwinfspteam.jnrwinfsp.api.FileAttributes;
+import com.github.jnrwinfspteam.jnrwinfsp.api.FileInfo;
+import com.github.jnrwinfspteam.jnrwinfsp.api.SecurityResult;
+import com.github.jnrwinfspteam.jnrwinfsp.api.VolumeInfo;
+import com.github.jnrwinfspteam.jnrwinfsp.api.WriteResult;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM;
 import com.github.jnrwinfspteam.jnrwinfsp.util.NaturalOrderComparator;
-import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
+import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.Pointer;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,7 +28,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public static void main(String[] args) throws MountException, IOException {
         Path mountPoint = null;
         if (args.length > 0)
-            mountPoint = Paths.get(args[0]);
+            mountPoint = Path.of(args[0]);
 
         var memFS = new WinFspMemFS();
         System.out.printf("Mounting %s ...%n", mountPoint == null ? "" : mountPoint);

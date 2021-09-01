@@ -1,10 +1,16 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
-import com.github.jnrwinfspteam.jnrwinfsp.lib.*;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.*;
-import com.github.jnrwinfspteam.jnrwinfsp.struct.FSP_FSCTL_VOLUME_PARAMS.FSAttr;
-import com.github.jnrwinfspteam.jnrwinfsp.util.Pointered;
-import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
+import com.github.jnrwinfspteam.jnrwinfsp.api.MountException;
+import com.github.jnrwinfspteam.jnrwinfsp.api.MountOptions;
+import com.github.jnrwinfspteam.jnrwinfsp.api.WinFspFS;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.*;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM_INTERFACE;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.WinPathUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS.FSAttr;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
+import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
@@ -81,7 +87,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
                 ));
                 pFileSystem = ppFileSystem.getValue();
 
-                if (options.debug) {
+                if (options.hasDebug()) {
                     Pointer stdErrHandle = libKernel32.GetStdHandle(LibKernel32.STD_ERROR_HANDLE);
                     libWinFsp.FspDebugLogSetHandle(stdErrHandle);
                     libWinFsp.FspFileSystemSetDebugLogF(pFileSystem, -1);
@@ -132,11 +138,11 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         volumeParamsP = FSP_FSCTL_VOLUME_PARAMS.create(runtime);
         FSP_FSCTL_VOLUME_PARAMS vp = volumeParamsP.get();
 
-        vp.SectorSize.set(options.sectorSize);
-        vp.SectorsPerAllocationUnit.set(options.sectorsPerAllocationUnit);
+        vp.SectorSize.set(options.getSectorSize());
+        vp.SectorsPerAllocationUnit.set(options.getSectorsPerAllocationUnit());
         vp.VolumeCreationTime.set(WinSysTime.now().get());
         vp.VolumeSerialNumber.set(WinSysTime.now().get() / (10000 * 1000));
-        vp.FileInfoTimeout.set(options.fileInfoTimeout);
+        vp.FileInfoTimeout.set(options.getFileInfoTimeout());
         vp.setFileSystemAttribute(FSAttr.UnicodeOnDisk, true);
         vp.setFileSystemAttribute(FSAttr.PersistentAcls, true);
         vp.setFileSystemAttribute(FSAttr.ReparsePoints, true);
@@ -148,9 +154,9 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.setFileSystemAttribute(FSAttr.UmFileContextIsFullContext, false);
         vp.setFileSystemAttribute(FSAttr.AllowOpenInKernelMode, true);
         vp.setFileSystemAttribute(FSAttr.RejectIrpPriorToTransact0, true);
-        vp.setFileSystemAttribute(FSAttr.WslFeatures, options.wslFeatures);
+        vp.setFileSystemAttribute(FSAttr.WslFeatures, options.hasWslFeatures());
 
-        switch (options.caseOption) {
+        switch (options.getCaseOption()) {
             case CASE_SENSITIVE:
                 vp.setFileSystemAttribute(FSAttr.CaseSensitiveSearch, true);
                 vp.setFileSystemAttribute(FSAttr.CasePreservedNames, true);

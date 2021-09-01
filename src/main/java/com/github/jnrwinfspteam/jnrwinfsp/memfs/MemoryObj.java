@@ -1,8 +1,8 @@
 package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
-import com.github.jnrwinfspteam.jnrwinfsp.flags.FileAttributes;
-import com.github.jnrwinfspteam.jnrwinfsp.result.FileInfo;
-import com.github.jnrwinfspteam.jnrwinfsp.util.WinSysTime;
+import com.github.jnrwinfspteam.jnrwinfsp.api.FileAttributes;
+import com.github.jnrwinfspteam.jnrwinfsp.api.FileInfo;
+import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 
 import java.nio.file.Path;
 import java.util.EnumSet;

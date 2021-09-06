@@ -420,7 +420,7 @@ final class FSHelper {
                     String fileName = fi.getFileName();
                     byte[] fileNameBytes = StringUtils.toBytes(fileName, false);
 
-                    Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length, true);
+                    Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
                     _putDirInfo(diP.get(), fi, fileNameBytes);
 
                     byte added = libWinFsp.FspFileSystemAddDirInfo(
@@ -429,6 +429,7 @@ final class FSHelper {
                             length,
                             pBytesTransferred
                     );
+                    diP.free(); // avoid memory leak
                     if (!bool(added))
                         return 0; // abort but with no error
                 }
@@ -532,13 +533,14 @@ final class FSHelper {
                                                  @size_t long replaceReparseDataSize) throws NTStatusException {
 
         byte[] data = winfsp.getReparsePointData(fs, fileName);
-        Pointer pCurrentReparseData = tempPointerFromBytes(data);
+        Pointer pCurrentReparseData = pointerFromBytes(data);
         int status = libWinFsp.FspFileSystemCanReplaceReparsePoint(
                 pCurrentReparseData,
                 data.length,
                 pReplaceReparseData,
                 replaceReparseDataSize
         );
+        PointerUtils.freeMemory(pCurrentReparseData);
 
         if (status != 0)
             throw new NTStatusException(status);
@@ -583,6 +585,7 @@ final class FSHelper {
         Pointer namePointer = StringUtils.toPointer(pOFI.getRuntime(), fi.getNormalizedName(), true);
         ofiOut.NormalizedName.get().transferFrom(0, namePointer, 0, namePointer.size());
         ofiOut.NormalizedNameSize.set(namePointer.size());
+        StringUtils.freeStringPointer(namePointer);
     }
 
     private static void putFileInfo(Pointer pFI, FileInfo fi) {
@@ -615,8 +618,8 @@ final class FSHelper {
         ppFileContext.putPointer(0, p);
     }
 
-    private static Pointer tempPointerFromBytes(byte[] bytes) {
-        Pointer p = RUNTIME.getMemoryManager().allocateTemporary(bytes.length, true);
+    private static Pointer pointerFromBytes(byte[] bytes) {
+        Pointer p = PointerUtils.allocateMemory(RUNTIME, bytes.length);
         p.put(0, bytes, 0, bytes.length);
         return p;
     }

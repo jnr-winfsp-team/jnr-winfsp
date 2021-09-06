@@ -57,8 +57,7 @@ public final class StringUtils {
             if (nullTerminated)
                 finalLength = Math.addExact(finalLength, 1);
 
-            long address = MemoryIO.getInstance().allocateMemory(finalLength, true);
-            Pointer p = Pointer.wrap(runtime, address, finalLength);
+            Pointer p = PointerUtils.allocateMemory(runtime, finalLength);
 
             p.put(0, bytes, 0, bytes.length);
             if (nullTerminated)
@@ -71,7 +70,7 @@ public final class StringUtils {
     }
 
     public static void freeStringPointer(Pointer pStr) {
-        MemoryIO.getInstance().freeMemory(pStr.address());
+        PointerUtils.freeMemory(pStr);
     }
 
     /**

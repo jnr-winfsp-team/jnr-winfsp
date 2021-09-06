@@ -54,15 +54,15 @@ public final class SecurityUtils {
 
         Runtime runtime = Runtime.getSystemRuntime();
 
-        // Put the security descriptor string in a pointer
+        // Put the security descriptor string in an allocated pointer
         Pointer pStringSecurityDescriptor = StringUtils.toPointer(runtime, securityDescriptorStr, true);
 
         // Prepare a pointer to a pointer in order to store the converted security descriptor
         PointerByReference ppSD = new PointerByReference();
 
-        // Prepare a temporary pointer in order to store the size of the converted security descriptor
+        // Allocate a pointer in order to store the size of the converted security descriptor
         int uLongSize = runtime.findType(NativeType.ULONG).size();
-        Pointer psdSize = runtime.getMemoryManager().allocateTemporary(uLongSize, true);
+        Pointer psdSize = PointerUtils.allocateMemory(runtime, uLongSize);
 
         // Do the conversion from a string to a security descriptor
         boolean res = bool(libAdvapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
@@ -71,9 +71,11 @@ public final class SecurityUtils {
                 ppSD,
                 psdSize)
         );
-        StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
-        if (!res)
+        if (!res) {
+            StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
+            PointerUtils.freeMemory(psdSize); // avoid memory leak
             throw new NTStatusException(libWinFsp.FspNtStatusFromWin32(runtime.getLastError()));
+        }
 
         try {
             // Put the converted security descriptor (and its size) in the output arguments
@@ -93,6 +95,8 @@ public final class SecurityUtils {
                 }
             }
         } finally {
+            StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
+            PointerUtils.freeMemory(psdSize); // avoid memory leak
             libKernel32.LocalFree(ppSD.getValue()); // avoid memory leak
         }
     }
@@ -120,9 +124,10 @@ public final class SecurityUtils {
                 ppSD,
                 null)
         );
-        StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
-        if (!res)
+        if (!res) {
+            StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
             throw new NTStatusException(libWinFsp.FspNtStatusFromWin32(runtime.getLastError()));
+        }
 
         try {
             PointerByReference outDescriptor = new PointerByReference();
@@ -143,6 +148,7 @@ public final class SecurityUtils {
                     outDescriptor.getValue()
             );
         } finally {
+            StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
             libKernel32.LocalFree(ppSD.getValue()); // avoid memory leak
         }
     }

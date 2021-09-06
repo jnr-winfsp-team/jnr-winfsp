@@ -35,31 +35,31 @@ public interface WinFspFS extends Mountable {
     /**
      * Create new file or directory.
      *
-     * @param fileSystem               The file system on which this request is posted.
-     * @param fileName                 The name of the file or directory to be created.
-     * @param createOptions            Create options for this request. This parameter has the same meaning as the
-     *                                 CreateOptions parameter of the NtCreateFile API. User mode file systems should typically
-     *                                 only be concerned with the flag FILE_DIRECTORY_FILE, which is an instruction to create a
-     *                                 directory rather than a file. Some file systems may also want to pay attention to the
-     *                                 FILE_NO_INTERMEDIATE_BUFFERING and FILE_WRITE_THROUGH flags, although these are
-     *                                 typically handled by the FSD component.
-     * @param grantedAccess            Determines the specific access rights that have been granted for this request. Upon
-     *                                 receiving this call all access checks have been performed and the user mode file system
-     *                                 need not perform any additional checks. However this parameter may be useful to a user
-     *                                 mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
-     *                                 which flags to use in its POSIX open() call.
-     * @param fileAttributes           File attributes to apply to the newly created file or directory.
-     * @param securityDescriptorString Security descriptor string to apply to the newly created file or directory. This security
-     *                                 descriptor will always be in self-relative format. Will be NULL for named streams.
-     * @param allocationSize           Allocation size for the newly created file.
-     * @param reparsePoint             (optional) Reparse point
+     * @param fileSystem         The file system on which this request is posted.
+     * @param fileName           The name of the file or directory to be created.
+     * @param createOptions      Create options for this request. This parameter has the same meaning as the
+     *                           CreateOptions parameter of the NtCreateFile API. User mode file systems should typically
+     *                           only be concerned with the flag FILE_DIRECTORY_FILE, which is an instruction to create a
+     *                           directory rather than a file. Some file systems may also want to pay attention to the
+     *                           FILE_NO_INTERMEDIATE_BUFFERING and FILE_WRITE_THROUGH flags, although these are
+     *                           typically handled by the FSD component.
+     * @param grantedAccess      Determines the specific access rights that have been granted for this request. Upon
+     *                           receiving this call all access checks have been performed and the user mode file system
+     *                           need not perform any additional checks. However this parameter may be useful to a user
+     *                           mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
+     *                           which flags to use in its POSIX open() call.
+     * @param fileAttributes     File attributes to apply to the newly created file or directory.
+     * @param securityDescriptor Security descriptor string to apply to the newly created file or directory. This security
+     *                           descriptor will always be in self-relative format. Will be NULL for named streams.
+     * @param allocationSize     Allocation size for the newly created file.
+     * @param reparsePoint       (optional) Reparse point
      */
     FileInfo create(FSP_FILE_SYSTEM fileSystem,
                     String fileName,
                     Set<CreateOptions> createOptions,
                     int grantedAccess,
                     Set<FileAttributes> fileAttributes,
-                    String securityDescriptorString,
+                    String securityDescriptor,
                     long allocationSize,
                     ReparsePoint reparsePoint
     ) throws NTStatusException;

@@ -27,12 +27,12 @@ public final class SecurityUtils {
         // Prepare a pointer to a pointer in order to store the converted security descriptor string
         PointerByReference ppSDString = new PointerByReference();
 
-        if (!libAdvapi32.ConvertSecurityDescriptorToStringSecurityDescriptorW(
+        if (!bool(libAdvapi32.ConvertSecurityDescriptorToStringSecurityDescriptorW(
                 pSecurityDescriptor,
                 LibAdvapi32.SDDL_REVISION_1,
                 REQUESTED_SECURITY_INFORMATION,
                 ppSDString,
-                null)
+                null))
         ) {
             throw new NTStatusException(libWinFsp.FspNtStatusFromWin32(runtime.getLastError()));
         }
@@ -54,8 +54,8 @@ public final class SecurityUtils {
 
         Runtime runtime = Runtime.getSystemRuntime();
 
-        // Put the security descriptor string in a temporary pointer
-        Pointer pStringSecurityDescriptor = StringUtils.toTemporaryPointer(runtime, securityDescriptorStr, true);
+        // Put the security descriptor string in a pointer
+        Pointer pStringSecurityDescriptor = StringUtils.toPointer(runtime, securityDescriptorStr, true);
 
         // Prepare a pointer to a pointer in order to store the converted security descriptor
         PointerByReference ppSD = new PointerByReference();
@@ -65,14 +65,15 @@ public final class SecurityUtils {
         Pointer psdSize = runtime.getMemoryManager().allocateTemporary(uLongSize, true);
 
         // Do the conversion from a string to a security descriptor
-        if (!libAdvapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+        boolean res = bool(libAdvapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
                 pStringSecurityDescriptor,
                 LibAdvapi32.SDDL_REVISION_1,
                 ppSD,
                 psdSize)
-        ) {
+        );
+        StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
+        if (!res)
             throw new NTStatusException(libWinFsp.FspNtStatusFromWin32(runtime.getLastError()));
-        }
 
         try {
             // Put the converted security descriptor (and its size) in the output arguments
@@ -106,21 +107,22 @@ public final class SecurityUtils {
 
         Runtime runtime = Runtime.getSystemRuntime();
 
-        // Put the security descriptor string in a temporary pointer
-        Pointer pStringSecurityDescriptor = StringUtils.toTemporaryPointer(runtime, securityDescriptorStr, true);
+        // Put the security descriptor string in a pointer
+        Pointer pStringSecurityDescriptor = StringUtils.toPointer(runtime, securityDescriptorStr, true);
 
         // Prepare a pointer to a pointer in order to store the converted security descriptor
         PointerByReference ppSD = new PointerByReference();
 
         // Do the conversion from a string to a security descriptor
-        if (!libAdvapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+        boolean res = bool(libAdvapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
                 pStringSecurityDescriptor,
                 LibAdvapi32.SDDL_REVISION_1,
                 ppSD,
                 null)
-        ) {
+        );
+        StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
+        if (!res)
             throw new NTStatusException(libWinFsp.FspNtStatusFromWin32(runtime.getLastError()));
-        }
 
         try {
             PointerByReference outDescriptor = new PointerByReference();
@@ -143,6 +145,10 @@ public final class SecurityUtils {
         } finally {
             libKernel32.LocalFree(ppSD.getValue()); // avoid memory leak
         }
+    }
+
+    private static boolean bool(int val) {
+        return PointerUtils.BOOL(val);
     }
 
     private SecurityUtils() {

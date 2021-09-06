@@ -13,14 +13,14 @@ public interface LibAdvapi32 {
     int DACL_SECURITY_INFORMATION = 0x00000004;
     int SACL_SECURITY_INFORMATION = 0x00000008;
 
-    boolean ConvertStringSecurityDescriptorToSecurityDescriptorW(
+    /* BOOL */ int ConvertStringSecurityDescriptorToSecurityDescriptorW(
             Pointer /* LCWSTR */ pStringSecurityDescriptor,
             @u_int32_t int stringSDRevision,
             @Out PointerByReference /* PSECURITY_DESCRIPTOR */ ppSecurityDescriptor,
             Pointer /* ULONG */ pSecurityDescriptorSize
     );
 
-    boolean ConvertSecurityDescriptorToStringSecurityDescriptorW(
+    /* BOOL */ int ConvertSecurityDescriptorToStringSecurityDescriptorW(
             Pointer /* SECURITY_DESCRIPTOR */ pSecurityDescriptor,
             @u_int32_t int requestedStringSDRevision,
             @u_int32_t int securityInformation,

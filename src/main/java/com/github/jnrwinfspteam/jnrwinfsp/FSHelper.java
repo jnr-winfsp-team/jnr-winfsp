@@ -3,6 +3,7 @@ package com.github.jnrwinfspteam.jnrwinfsp;
 import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.*;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.PointerUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.SecurityUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
@@ -16,13 +17,26 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 final class FSHelper {
 
     private static final Runtime RUNTIME = Runtime.getSystemRuntime();
 
-    static void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    private final WinFspFS winfsp;
+    private final LibWinFsp libWinFsp;
+    private final LibKernel32 libKernel32;
+    private final LibAdvapi32 libAdvapi32;
+
+    FSHelper(WinFspFS winfsp, LibWinFsp libWinFsp, LibKernel32 libKernel32, LibAdvapi32 libAdvapi32) {
+        this.winfsp = Objects.requireNonNull(winfsp);
+        this.libWinFsp = Objects.requireNonNull(libWinFsp);
+        this.libKernel32 = Objects.requireNonNull(libKernel32);
+        this.libAdvapi32 = Objects.requireNonNull(libAdvapi32);
+    }
+
+    void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.GetVolumeInfo.set((pFS, pVolumeInfo) -> {
             try {
                 VolumeInfo vi = winfsp.getVolumeInfo(fs(pFS));
@@ -38,7 +52,7 @@ final class FSHelper {
         });
     }
 
-    static void initSetVolumeLabel(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initSetVolumeLabel(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.SetVolumeLabel.set((pFS, pVolumeLabel, pVolumeInfo) -> {
 
             try {
@@ -56,12 +70,7 @@ final class FSHelper {
         });
     }
 
-    static void initGetSecurityByName(FSP_FILE_SYSTEM_INTERFACE fsi,
-                                      WinFspFS winfsp,
-                                      LibWinFsp libWinFsp,
-                                      LibKernel32 libKernel32,
-                                      LibAdvapi32 libAdvapi32
-    ) {
+    void initGetSecurityByName(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.GetSecurityByName.set((pFS, pFileName, pFileAttributes, pSecurityDescriptor, pSecurityDescriptorSize) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
@@ -69,16 +78,16 @@ final class FSHelper {
                 if (opSR.isEmpty()) {
                     byte res = libWinFsp.FspFileSystemFindReparsePoint(
                             pFS,
-                            newGetReparsePointByNameCallback(winfsp),
+                            newGetReparsePointByNameCallback(),
                             null,
                             pFileName,
                             pFileAttributes // this stores the reparse point index in case res is TRUE
                     );
 
                     if (bool(res))
-                        return 0x00000104; // STATUS_REPARSE
+                        throw new NTStatusException(0x00000104); // STATUS_REPARSE
                     else
-                        return 0xC0000034; // STATUS_OBJECT_NAME_NOT_FOUND
+                        throw new NTStatusException(0xC0000034); // STATUS_OBJECT_NAME_NOT_FOUND
                 }
 
                 SecurityResult sr = opSR.orElseThrow();
@@ -101,12 +110,7 @@ final class FSHelper {
         });
     }
 
-    static void initCreateEx(FSP_FILE_SYSTEM_INTERFACE fsi,
-                             WinFspFS winfsp,
-                             LibWinFsp libWinFsp,
-                             LibKernel32 libKernel32,
-                             LibAdvapi32 libAdvapi32
-    ) {
+    void initCreateEx(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.CreateEx.set((pFS, pFileName, createOptions, grantedAccess, fileAttributes, pSecurityDescriptor, allocationSize,
                           pExtraBuffer, extraLength, extraBufferIsReparsePoint,
                           ppFileContext, pFileInfo) -> {
@@ -121,10 +125,8 @@ final class FSHelper {
 
                 ReparsePoint reparsePoint = null;
                 if (pExtraBuffer != null && bool(extraBufferIsReparsePoint)) {
-                    byte[] reparsePointData = new byte[(int) extraLength];
-                    pExtraBuffer.get(0, reparsePointData, 0, reparsePointData.length);
-                    /* the first field in a reparse buffer is the reparse tag */
-                    int reparseTag = pExtraBuffer.getInt(0);
+                    byte[] reparsePointData = PointerUtils.getBytes(pExtraBuffer, 0, (int) extraLength);
+                    int reparseTag = pExtraBuffer.getInt(0); /* the first field in a reparse buffer is the tag */
                     reparsePoint = new ReparsePoint(reparsePointData, reparseTag);
                 }
 
@@ -149,7 +151,7 @@ final class FSHelper {
         });
     }
 
-    static void initOpen(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initOpen(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Open.set((pFS, pFileName, createOptions, grantedAccess, ppFileContext, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
@@ -170,7 +172,7 @@ final class FSHelper {
         });
     }
 
-    static void initOverwrite(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initOverwrite(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Overwrite.set((pFS, pFileContext, fileAttributes, replaceFileAttributes, allocationSize, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileContext);
@@ -191,7 +193,7 @@ final class FSHelper {
         });
     }
 
-    static void initCleanup(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initCleanup(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Cleanup.set((pFS, pFileContext, _pFileName, flags) -> {
             String fileName = StringUtils.fromPointer(pFileContext);
             EnumSet<CleanupFlags> cleanupFlags = CleanupFlags.setOf(flags);
@@ -203,7 +205,7 @@ final class FSHelper {
         });
     }
 
-    static void initClose(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initClose(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Close.set((pFS, pFileContext) -> {
             String fileName = StringUtils.fromPointer(pFileContext);
             winfsp.close(fs(pFS), fileName);
@@ -211,7 +213,7 @@ final class FSHelper {
         });
     }
 
-    static void initRead(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initRead(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Read.set((pFS, pFileContext, pBuffer, offset, length, pBytesTransferred) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileContext);
@@ -227,7 +229,7 @@ final class FSHelper {
         });
     }
 
-    static void initWrite(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initWrite(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Write.set((pFS, pFileContext, pBuffer, offset, length, writeToEndOfFile, constrainedIo,
                        pBytesTransferred, pFileInfo) -> {
             try {
@@ -255,7 +257,7 @@ final class FSHelper {
         });
     }
 
-    static void initFlush(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initFlush(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Flush.set((pFS, pFileContext, pFileInfo) -> {
             try {
                 FSP_FILE_SYSTEM fs = fs(pFS);
@@ -273,7 +275,7 @@ final class FSHelper {
         });
     }
 
-    static void initGetFileInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initGetFileInfo(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.GetFileInfo.set((pFS, pFileContext, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileContext);
@@ -288,7 +290,7 @@ final class FSHelper {
         });
     }
 
-    static void initSetBasicInfo(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initSetBasicInfo(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.SetBasicInfo.set((pFS, pFileContext, fileAttributes, creationTime, lastAccessTime, lastWriteTime, changeTime,
                               pFileInfo) -> {
             try {
@@ -312,7 +314,7 @@ final class FSHelper {
         });
     }
 
-    static void initSetFileSize(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initSetFileSize(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.SetFileSize.set((pFS, pFileContext, newSize, setAllocationSize, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileContext);
@@ -327,7 +329,7 @@ final class FSHelper {
         });
     }
 
-    static void initCanDelete(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initCanDelete(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.CanDelete.set((pFS, _pFileContext, pFileName) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
@@ -340,7 +342,7 @@ final class FSHelper {
         });
     }
 
-    static void initRename(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initRename(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Rename.set((pFS, _pFileContext, pFileName, pNewFileName, replaceIfExists) -> {
             try {
                 winfsp.rename(
@@ -357,12 +359,7 @@ final class FSHelper {
         });
     }
 
-    static void initGetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi,
-                                WinFspFS winfsp,
-                                LibWinFsp libWinFsp,
-                                LibKernel32 libKernel32,
-                                LibAdvapi32 libAdvapi32
-    ) {
+    void initGetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.GetSecurity.set((pFS, pFileContext, pSecurityDescriptor, pSecurityDescriptorSize) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileContext);
@@ -384,12 +381,7 @@ final class FSHelper {
         });
     }
 
-    static void initSetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi,
-                                WinFspFS winfsp,
-                                LibWinFsp libWinFsp,
-                                LibKernel32 libKernel32,
-                                LibAdvapi32 libAdvapi32
-    ) {
+    void initSetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.SetSecurity.set((pFS, pFileContext, securityInformation, pModificationDescriptor) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileContext);
@@ -412,7 +404,7 @@ final class FSHelper {
         });
     }
 
-    static void initReadDirectory(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp, LibWinFsp libWinFsp) {
+    void initReadDirectory(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.ReadDirectory.set((pFS, pFileContext, pPattern, pMarker, pBuffer, length, pBytesTransferred) -> {
             try {
                 String pattern = StringUtils.fromPointer(pPattern);
@@ -451,12 +443,12 @@ final class FSHelper {
         });
     }
 
-    static void initResolveReparsePoints(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp, LibWinFsp libWinFsp) {
+    void initResolveReparsePoints(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.ResolveReparsePoints.set((pFS, pFileName, reparsePointIndex, resolveLastPathComponent, pIoStatus,
                                       pBuffer, pSize) -> {
             return libWinFsp.FspFileSystemResolveReparsePoints(
                     pFS,
-                    newGetReparsePointByNameCallback(winfsp),
+                    newGetReparsePointByNameCallback(),
                     null,
                     pFileName,
                     reparsePointIndex,
@@ -468,7 +460,7 @@ final class FSHelper {
         });
     }
 
-    static void initGetReparsePoint(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initGetReparsePoint(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.GetReparsePoint.set((pFS, _pFileContext, pFileName, pBuffer, pSize) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
@@ -487,18 +479,16 @@ final class FSHelper {
         });
     }
 
-    static void initSetReparsePoint(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp, LibWinFsp libWinFsp) {
+    void initSetReparsePoint(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.SetReparsePoint.set((pFS, _pFileContext, pFileName, pBuffer, size) -> {
             try {
                 FSP_FILE_SYSTEM fs = fs(pFS);
                 String fileName = StringUtils.fromPointer(pFileName);
-                ensureReparsePointCanBeReplaced(winfsp, libWinFsp, fs, fileName, pBuffer, size);
+                ensureReparsePointCanBeReplaced(fs, fileName, pBuffer, size);
 
-                byte[] pReplaceReparseData = new byte[(int) size];
-                pBuffer.get(0, pReplaceReparseData, 0, pReplaceReparseData.length);
-                /* the first field in a reparse buffer is the reparse tag */
-                int reparseTag = pBuffer.getInt(0);
-                winfsp.setReparsePoint(fs, fileName, pReplaceReparseData, reparseTag);
+                byte[] replaceReparseData = PointerUtils.getBytes(pBuffer, 0, (int) size);
+                int reparseTag = pBuffer.getInt(0); /* the first field in a reparse buffer is the reparse tag */
+                winfsp.setReparsePoint(fs, fileName, replaceReparseData, reparseTag);
 
                 return 0;
             } catch (NTStatusException e) {
@@ -507,12 +497,12 @@ final class FSHelper {
         });
     }
 
-    static void initDeleteReparsePoint(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp, LibWinFsp libWinFsp) {
+    void initDeleteReparsePoint(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.DeleteReparsePoint.set((pFS, _pFileContext, pFileName, pBuffer, size) -> {
             try {
                 FSP_FILE_SYSTEM fs = fs(pFS);
                 String fileName = StringUtils.fromPointer(pFileName);
-                ensureReparsePointCanBeReplaced(winfsp, libWinFsp, fs, fileName, pBuffer, size);
+                ensureReparsePointCanBeReplaced(fs, fileName, pBuffer, size);
 
                 winfsp.deleteReparsePoint(fs, fileName);
 
@@ -523,7 +513,7 @@ final class FSHelper {
         });
     }
 
-    private static LibWinFsp.GetReparsePointByNameCallback newGetReparsePointByNameCallback(WinFspFS winfsp) {
+    private LibWinFsp.GetReparsePointByNameCallback newGetReparsePointByNameCallback() {
         return ((pFS, _pContext, pFileName, _isDirectory, _pBuffer, _pSize) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
@@ -536,12 +526,10 @@ final class FSHelper {
         });
     }
 
-    private static void ensureReparsePointCanBeReplaced(WinFspFS winfsp,
-                                                        LibWinFsp libWinFsp,
-                                                        FSP_FILE_SYSTEM fs,
-                                                        String fileName,
-                                                        Pointer /* VOID */ pReplaceReparseData,
-                                                        @size_t long replaceReparseDataSize) throws NTStatusException {
+    private void ensureReparsePointCanBeReplaced(FSP_FILE_SYSTEM fs,
+                                                 String fileName,
+                                                 Pointer /* VOID */ pReplaceReparseData,
+                                                 @size_t long replaceReparseDataSize) throws NTStatusException {
 
         byte[] data = winfsp.getReparsePointData(fs, fileName);
         Pointer pCurrentReparseData = tempPointerFromBytes(data);
@@ -556,7 +544,7 @@ final class FSHelper {
             throw new NTStatusException(status);
     }
 
-    static void initGetDirInfoByName(FSP_FILE_SYSTEM_INTERFACE fsi, WinFspFS winfsp) {
+    void initGetDirInfoByName(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.GetDirInfoByName.set((pFS, pFileContext, pFileName, pDirInfo) -> {
             try {
                 String parentDirName = StringUtils.fromPointer(pFileContext);
@@ -586,7 +574,7 @@ final class FSHelper {
     }
 
     private static boolean bool(byte val) {
-        return val != 0; // JNR conversion to boolean is not working correctly so we need to do it here
+        return PointerUtils.BOOLEAN(val);
     }
 
     private static void putOpenFileInfo(Pointer pOFI, FileInfo fi) {

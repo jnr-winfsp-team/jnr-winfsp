@@ -48,19 +48,6 @@ public final class StringUtils {
      * @return A pointer (null if the string is null)
      */
     public static Pointer toPointer(Runtime runtime, String s, boolean nullTerminated) {
-        return _toPointer(runtime, s, false, nullTerminated);
-    }
-
-    /**
-     * Returns a temporary pointer containing the contents of the given string, encoded with the configured charset.
-     *
-     * @return A pointer (null if the string is null)
-     */
-    public static Pointer toTemporaryPointer(Runtime runtime, String s, boolean nullTerminated) {
-        return _toPointer(runtime, s, true, nullTerminated);
-    }
-
-    private static Pointer _toPointer(Runtime runtime, String s, boolean temporaryPointer, boolean nullTerminated) {
         if (s == null)
             return null;
 
@@ -70,13 +57,8 @@ public final class StringUtils {
             if (nullTerminated)
                 finalLength = Math.addExact(finalLength, 1);
 
-            final Pointer p;
-            if (temporaryPointer) {
-                p = runtime.getMemoryManager().allocateTemporary(finalLength, true);
-            } else {
-                long address = MemoryIO.getInstance().allocateMemory(finalLength, true);
-                p = Pointer.wrap(runtime, address, finalLength);
-            }
+            long address = MemoryIO.getInstance().allocateMemory(finalLength, true);
+            Pointer p = Pointer.wrap(runtime, address, finalLength);
 
             p.put(0, bytes, 0, bytes.length);
             if (nullTerminated)

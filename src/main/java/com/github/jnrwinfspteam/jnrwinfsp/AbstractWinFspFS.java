@@ -33,6 +33,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
     private final LibWinFsp libWinFsp;
     private final LibKernel32 libKernel32;
     private final LibAdvapi32 libAdvapi32;
+    private final FSHelper fsHelper;
     private final Object mountLock;
     private boolean mounted;
     private final Set<String> notImplementedMethods;
@@ -54,6 +55,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
                 .library("Advapi32.dll")
                 .failImmediately()
                 .load();
+        this.fsHelper = new FSHelper(this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
         this.mountLock = new Object();
         this.mounted = false;
         this.notImplementedMethods = Arrays.stream(this.getClass().getMethods())
@@ -177,53 +179,53 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         FSP_FILE_SYSTEM_INTERFACE fsi = fsInterfaceP.get();
 
         if (isImplemented("getVolumeInfo"))
-            FSHelper.initGetVolumeInfo(fsi, this);
+            fsHelper.initGetVolumeInfo(fsi);
         if (isImplemented("setVolumeLabel"))
-            FSHelper.initSetVolumeLabel(fsi, this);
+            fsHelper.initSetVolumeLabel(fsi);
         if (isImplemented("getSecurityByName"))
-            FSHelper.initGetSecurityByName(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
+            fsHelper.initGetSecurityByName(fsi);
         if (isImplemented("create"))
-            FSHelper.initCreateEx(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
+            fsHelper.initCreateEx(fsi);
         if (isImplemented("open"))
-            FSHelper.initOpen(fsi, this);
+            fsHelper.initOpen(fsi);
         if (isImplemented("overwrite"))
-            FSHelper.initOverwrite(fsi, this);
+            fsHelper.initOverwrite(fsi);
         if (isImplemented("cleanup"))
-            FSHelper.initCleanup(fsi, this);
+            fsHelper.initCleanup(fsi);
         if (isImplemented("close"))
-            FSHelper.initClose(fsi, this);
+            fsHelper.initClose(fsi);
         if (isImplemented("read"))
-            FSHelper.initRead(fsi, this);
+            fsHelper.initRead(fsi);
         if (isImplemented("write"))
-            FSHelper.initWrite(fsi, this);
+            fsHelper.initWrite(fsi);
         if (isImplemented("flush"))
-            FSHelper.initFlush(fsi, this);
+            fsHelper.initFlush(fsi);
         if (isImplemented("getFileInfo"))
-            FSHelper.initGetFileInfo(fsi, this);
+            fsHelper.initGetFileInfo(fsi);
         if (isImplemented("setBasicInfo"))
-            FSHelper.initSetBasicInfo(fsi, this);
+            fsHelper.initSetBasicInfo(fsi);
         if (isImplemented("setFileSize"))
-            FSHelper.initSetFileSize(fsi, this);
+            fsHelper.initSetFileSize(fsi);
         if (isImplemented("canDelete"))
-            FSHelper.initCanDelete(fsi, this);
+            fsHelper.initCanDelete(fsi);
         if (isImplemented("rename"))
-            FSHelper.initRename(fsi, this);
+            fsHelper.initRename(fsi);
         if (isImplemented("getSecurity"))
-            FSHelper.initGetSecurity(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
+            fsHelper.initGetSecurity(fsi);
         if (isImplemented("setSecurity") && isImplemented("getSecurity"))
-            FSHelper.initSetSecurity(fsi, this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
+            fsHelper.initSetSecurity(fsi);
         if (isImplemented("readDirectory"))
-            FSHelper.initReadDirectory(fsi, this, this.libWinFsp);
+            fsHelper.initReadDirectory(fsi);
         if (isImplemented("getDirInfoByName"))
-            FSHelper.initGetDirInfoByName(fsi, this);
+            fsHelper.initGetDirInfoByName(fsi);
         if (isImplemented("getReparsePointData"))
-            FSHelper.initResolveReparsePoints(fsi, this, this.libWinFsp);
+            fsHelper.initResolveReparsePoints(fsi);
         if (isImplemented("getReparsePointData"))
-            FSHelper.initGetReparsePoint(fsi, this);
+            fsHelper.initGetReparsePoint(fsi);
         if (isImplemented("getReparsePointData") && isImplemented("setReparsePoint"))
-            FSHelper.initSetReparsePoint(fsi, this, this.libWinFsp);
+            fsHelper.initSetReparsePoint(fsi);
         if (isImplemented("getReparsePointData") && isImplemented("deleteReparsePoint"))
-            FSHelper.initDeleteReparsePoint(fsi, this, this.libWinFsp);
+            fsHelper.initDeleteReparsePoint(fsi);
     }
 
     private boolean isImplemented(String funcName) {

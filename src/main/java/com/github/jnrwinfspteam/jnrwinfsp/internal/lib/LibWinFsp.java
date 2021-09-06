@@ -281,4 +281,63 @@ public interface LibWinFsp {
 
     @u_int32_t
     int FspNtStatusFromWin32(@u_int32_t int error);
+
+
+    @FunctionalInterface
+    interface EnumerateEaCallback {
+        @Delegate
+        @u_int32_t
+        int EnumerateEa(
+                Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
+                Pointer /* VOID */ pContext,
+                Pointer /* FILE_FULL_EA_INFORMATION */ pSingleEa
+        );
+    }
+
+
+    /**
+     * Enumerate extended attributes in a buffer.
+     * <p>
+     * This is a helper for implementing the CreateEx and SetEa operations in file systems
+     * that support extended attributes.
+     *
+     * @param pFileSystem The file system object.
+     * @param enumerateEa Pointer to function that receives a single extended attribute. The function
+     *                    should return STATUS_SUCCESS or an error code if unsuccessful.
+     * @param pContext    User context to supply to EnumEa.
+     * @param pEa         Extended attributes buffer.
+     * @param eaLength    Extended attributes buffer length.
+     * @return STATUS_SUCCESS or error code from EnumerateEa.
+     */
+    @u_int32_t
+    int FspFileSystemEnumerateEa(
+            Pointer /* FSP_FILE_SYSTEM */ pFileSystem,
+            EnumerateEaCallback enumerateEa,
+            Pointer /* VOID */ pContext,
+            Pointer /* FILE_FULL_EA_INFORMATION */ pEa,
+            @u_int32_t int eaLength
+    );
+
+    /**
+     * Add extended attribute to a buffer.
+     * <p>
+     * This is a helper for implementing the GetEa operation.
+     *
+     * @param pSingleEa         The extended attribute to add. A value of NULL acts as an EOF marker for a GetEa
+     *                          operation.
+     * @param pEa               Pointer to a buffer that will receive the extended attribute. This should contain
+     *                          the same value passed to the GetEa Ea parameter.
+     * @param eaLength          Length of buffer. This should contain the same value passed to the GetEa
+     *                          EaLength parameter.
+     * @param pBytesTransferred [out]
+     *                          Pointer to a memory location that will receive the actual number of bytes stored. This should
+     *                          contain the same value passed to the GetEa PBytesTransferred parameter.
+     * @return TRUE if the extended attribute was added, FALSE if there was not enough space to add it.
+     */
+    /* BOOLEAN */ byte FspFileSystemAddEa(
+            Pointer /* FILE_FULL_EA_INFORMATION */ pSingleEa,
+            Pointer /* FILE_FULL_EA_INFORMATION */ pEa,
+            @u_int32_t int eaLength,
+            Pointer /* ULONG */ pBytesTransferred
+    );
 }

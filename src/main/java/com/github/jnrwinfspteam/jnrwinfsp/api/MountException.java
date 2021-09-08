@@ -11,6 +11,6 @@ public class MountException extends Exception {
     }
 
     public MountException(String message, int ntStatus) {
-        this(String.format("%s: returned NT STATUS of %X", message, ntStatus));
+        this(String.format("%s: returned NT STATUS of %08X", message, ntStatus));
     }
 }

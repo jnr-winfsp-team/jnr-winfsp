@@ -13,6 +13,8 @@ import jnr.ffi.Runtime;
 import jnr.ffi.Struct;
 import jnr.ffi.types.size_t;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.util.EnumSet;
@@ -29,11 +31,15 @@ final class FSHelper {
     private final LibKernel32 libKernel32;
     private final LibAdvapi32 libAdvapi32;
 
-    FSHelper(WinFspFS winfsp, LibWinFsp libWinFsp, LibKernel32 libKernel32, LibAdvapi32 libAdvapi32) {
+    private final PrintStream verboseErr;
+
+    FSHelper(WinFspFS winfsp, LibWinFsp libWinFsp, LibKernel32 libKernel32, LibAdvapi32 libAdvapi32, boolean debug) {
         this.winfsp = Objects.requireNonNull(winfsp);
         this.libWinFsp = Objects.requireNonNull(libWinFsp);
         this.libKernel32 = Objects.requireNonNull(libKernel32);
         this.libAdvapi32 = Objects.requireNonNull(libAdvapi32);
+
+        this.verboseErr = debug ? System.err : new PrintStream(OutputStream.nullOutputStream());
     }
 
     void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi) {
@@ -47,6 +53,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR GetVolumeInfo: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -65,6 +73,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR SetVolumeLabel: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -105,6 +115,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR GetSecurityByName: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -146,6 +158,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR CreateEx: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -167,6 +181,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR Open: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -188,6 +204,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR Overwrite: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -223,6 +241,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR Read: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 // TODO handle STATUS_PENDING(0x103) for async operations
                 return e.getNtStatus();
             }
@@ -251,6 +271,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR Write: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 // TODO handle STATUS_PENDING(0x103) for async operations
                 return e.getNtStatus();
             }
@@ -270,6 +292,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR Flush: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -285,6 +309,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR GetFileInfo: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -309,6 +335,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR SetBasicInfo: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -324,6 +352,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR SetFileSize: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -337,6 +367,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR CanDelete: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -354,6 +386,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR Rename: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -376,6 +410,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR GetSecurity: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -399,6 +435,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR SetSecurity: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -439,6 +477,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR ReadDirectory: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -475,6 +515,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR GetReparsePoint: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -493,6 +535,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR SetReparsePoint: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -509,6 +553,8 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR DeleteReparsePoint: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             }
         });
@@ -564,8 +610,12 @@ final class FSHelper {
 
                 return 0;
             } catch (NTStatusException e) {
+                verboseErr.printf("--- ERROR GetDirInfoByName: %08x%n", e.getNtStatus());
+                e.printStackTrace(verboseErr);
                 return e.getNtStatus();
             } catch (CharacterCodingException cce) {
+                verboseErr.printf("--- ERROR GetDirInfoByName: %s%n", cce);
+                cce.printStackTrace(verboseErr);
                 throw new RuntimeException(cce);
             }
         });

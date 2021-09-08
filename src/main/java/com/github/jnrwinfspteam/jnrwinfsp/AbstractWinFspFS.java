@@ -33,11 +33,11 @@ public abstract class AbstractWinFspFS implements WinFspFS {
     private final LibWinFsp libWinFsp;
     private final LibKernel32 libKernel32;
     private final LibAdvapi32 libAdvapi32;
-    private final FSHelper fsHelper;
     private final Object mountLock;
     private boolean mounted;
     private final Set<String> notImplementedMethods;
 
+    private FSHelper fsHelper;
     private Pointered<FSP_FSCTL_VOLUME_PARAMS> volumeParamsP;
     private Pointered<FSP_FILE_SYSTEM_INTERFACE> fsInterfaceP;
     private Pointer pFileSystem;
@@ -55,7 +55,6 @@ public abstract class AbstractWinFspFS implements WinFspFS {
                 .library("Advapi32.dll")
                 .failImmediately()
                 .load();
-        this.fsHelper = new FSHelper(this, this.libWinFsp, this.libKernel32, this.libAdvapi32);
         this.mountLock = new Object();
         this.mounted = false;
         this.notImplementedMethods = Arrays.stream(this.getClass().getMethods())
@@ -63,6 +62,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
                 .map(Method::getName)
                 .collect(Collectors.toUnmodifiableSet());
 
+        this.fsHelper = null;
         this.volumeParamsP = null;
         this.fsInterfaceP = null;
         this.pFileSystem = null;
@@ -78,7 +78,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
             try {
                 Runtime runtime = Runtime.getSystemRuntime();
                 initVolumeParams(runtime, options);
-                initFSInterface(runtime);
+                initFSInterface(runtime, options);
 
                 var ppFileSystem = new PointerByReference();
                 checkMountStatus("FileSystemCreate", libWinFsp.FspFileSystemCreate(
@@ -174,7 +174,8 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         }
     }
 
-    private void initFSInterface(Runtime runtime) {
+    private void initFSInterface(Runtime runtime, MountOptions options) {
+        fsHelper = new FSHelper(this, this.libWinFsp, this.libKernel32, this.libAdvapi32, options.hasDebug());
         fsInterfaceP = FSP_FILE_SYSTEM_INTERFACE.create(runtime);
         FSP_FILE_SYSTEM_INTERFACE fsi = fsInterfaceP.get();
 

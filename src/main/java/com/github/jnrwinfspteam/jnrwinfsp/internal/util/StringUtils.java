@@ -1,6 +1,5 @@
 package com.github.jnrwinfspteam.jnrwinfsp.internal.util;
 
-import com.kenai.jffi.MemoryIO;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 
@@ -55,13 +54,14 @@ public final class StringUtils {
             byte[] bytes = getEncoder().reset().encode(CharBuffer.wrap(s)).array();
             int finalLength = bytes.length;
             if (nullTerminated)
-                finalLength = Math.addExact(finalLength, 1);
+                finalLength = Math.addExact(finalLength, CS_BYTES_PER_CHAR);
 
             Pointer p = PointerUtils.allocateMemory(runtime, finalLength);
 
             p.put(0, bytes, 0, bytes.length);
             if (nullTerminated)
-                p.putByte(bytes.length, (byte) 0);
+                for (int i = 0; i < CS_BYTES_PER_CHAR; i++)
+                    p.putByte(bytes.length, (byte) 0);
 
             return p;
         } catch (CharacterCodingException cce) {
@@ -123,9 +123,10 @@ public final class StringUtils {
                 return buf.array();
 
             final int bufSize = buf.remaining();
-            byte[] bytes = new byte[bufSize + 1];
+            byte[] bytes = new byte[bufSize + CS_BYTES_PER_CHAR];
             buf.get(bytes, 0, bufSize);
-            bytes[bufSize] = '\0';
+            for (int i = 0; i < CS_BYTES_PER_CHAR; i++)
+                bytes[bufSize + i] = (byte) 0;
 
             return bytes;
         } catch (CharacterCodingException cce) {

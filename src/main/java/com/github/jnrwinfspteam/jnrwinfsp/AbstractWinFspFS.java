@@ -145,6 +145,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         vp.VolumeCreationTime.set(WinSysTime.now().get());
         vp.VolumeSerialNumber.set(WinSysTime.now().get() / (10000 * 1000));
         vp.FileInfoTimeout.set(options.getFileInfoTimeout());
+        vp.MaxComponentLength.set(options.getMaxFileNameLength());
         vp.setFileSystemAttribute(FSAttr.UnicodeOnDisk, true);
         vp.setFileSystemAttribute(FSAttr.PersistentAcls, true);
         vp.setFileSystemAttribute(FSAttr.ReparsePoints, true);

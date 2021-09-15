@@ -10,6 +10,7 @@ public class MountOptions {
     private int sectorsPerAllocationUnit = 1;
     private long fileInfoTimeout = 1000;
     private boolean wslFeatures = true;
+    private int maxFileNameLength = 255;
 
     /**
      * Sets "debug" option (default is {@code false}).
@@ -71,6 +72,15 @@ public class MountOptions {
         return this;
     }
 
+    /**
+     * Sets "max file name length" option (default is 255).
+     *
+     * @param maxFileNameLength Maximum file/folder name length
+     */
+    public MountOptions setMaxFileNameLength(int maxFileNameLength) {
+        this.maxFileNameLength = maxFileNameLength;
+        return this;
+    }
 
     public boolean hasDebug() {
         return debug;
@@ -94,6 +104,10 @@ public class MountOptions {
 
     public boolean hasWslFeatures() {
         return wslFeatures;
+    }
+
+    public int getMaxFileNameLength() {
+        return maxFileNameLength;
     }
 
     /**

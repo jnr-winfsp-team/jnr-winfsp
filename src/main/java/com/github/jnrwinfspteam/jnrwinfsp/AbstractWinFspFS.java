@@ -1,17 +1,16 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
-import com.github.jnrwinfspteam.jnrwinfsp.api.MountException;
-import com.github.jnrwinfspteam.jnrwinfsp.api.MountOptions;
-import com.github.jnrwinfspteam.jnrwinfsp.api.WinFspFS;
+import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM_INTERFACE;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.PointerUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.WinPathUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS.FSAttr;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
-import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.LibraryLoader;
+import jnr.ffi.NativeType;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 import jnr.ffi.byref.PointerByReference;
@@ -28,7 +27,13 @@ import java.util.stream.Collectors;
  * <p>
  * See {@link WinFspStubFS} for a way to implement only a subset of the operations.
  */
-public abstract class AbstractWinFspFS implements WinFspFS {
+public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorHandler, WinFspFS {
+
+    private static final int REQUESTED_SECURITY_INFORMATION =
+            LibAdvapi32.OWNER_SECURITY_INFORMATION
+                    | LibAdvapi32.GROUP_SECURITY_INFORMATION
+                    | LibAdvapi32.DACL_SECURITY_INFORMATION
+                    | LibAdvapi32.SACL_SECURITY_INFORMATION;
 
     private final LibWinFsp libWinFsp;
     private final LibKernel32 libKernel32;
@@ -69,7 +74,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
     }
 
     @Override
-    public void mountLocalDrive(Path mountPoint, MountOptions options) throws MountException {
+    public final void mountLocalDrive(Path mountPoint, MountOptions options) throws MountException {
         Objects.requireNonNull(options);
         synchronized (mountLock) {
             if (mounted)
@@ -120,7 +125,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
     }
 
     @Override
-    public void unmountLocalDrive() {
+    public final void unmountLocalDrive() {
         synchronized (mountLock) {
             if (!mounted)
                 return;
@@ -133,6 +138,72 @@ public abstract class AbstractWinFspFS implements WinFspFS {
             freeStructs();
 
             mounted = false;
+        }
+    }
+
+    @Override
+    public final byte[] securityDescriptorToBytes(String sd) throws NTStatusException {
+        Runtime runtime = Runtime.getSystemRuntime();
+
+        // Put the security descriptor string in an allocated pointer
+        Pointer pStringSecurityDescriptor = StringUtils.toPointer(runtime, sd, true);
+
+        // Prepare a pointer to a pointer in order to store the converted security descriptor
+        PointerByReference ppSD = new PointerByReference();
+
+        // Allocate a pointer in order to store the size of the converted security descriptor
+        int uLongSize = runtime.findType(NativeType.ULONG).size();
+        Pointer psdSize = PointerUtils.allocateMemory(runtime, uLongSize);
+
+        // Do the conversion from a string to a security descriptor
+        boolean res = bool(libAdvapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                pStringSecurityDescriptor,
+                LibAdvapi32.SDDL_REVISION_1,
+                ppSD,
+                psdSize)
+        );
+        if (!res) {
+            StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
+            PointerUtils.freeMemory(psdSize); // avoid memory leak
+            throw new NTStatusException(libWinFsp.FspNtStatusFromWin32(runtime.getLastError()));
+        }
+
+        try {
+            Pointer pSD = ppSD.getValue();
+            int sdSize = psdSize.getInt(0);
+            return PointerUtils.getBytes(pSD, 0, sdSize);
+        } finally {
+            StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
+            PointerUtils.freeMemory(psdSize); // avoid memory leak
+            libKernel32.LocalFree(ppSD.getValue()); // avoid memory leak
+        }
+    }
+
+    @Override
+    public final String securityDescriptorToString(byte[] sd) throws NTStatusException {
+        Runtime runtime = Runtime.getSystemRuntime();
+
+        Pointer pSD = PointerUtils.fromBytes(runtime, sd);
+
+        // Prepare a pointer to a pointer in order to store the converted security descriptor string
+        PointerByReference ppSDString = new PointerByReference();
+
+        if (!bool(libAdvapi32.ConvertSecurityDescriptorToStringSecurityDescriptorW(
+                pSD,
+                LibAdvapi32.SDDL_REVISION_1,
+                REQUESTED_SECURITY_INFORMATION,
+                ppSDString,
+                null))
+        ) {
+            PointerUtils.freeBytesPointer(pSD); // avoid memory leak
+            throw new NTStatusException(libWinFsp.FspNtStatusFromWin32(runtime.getLastError()));
+        }
+
+        try {
+            return StringUtils.fromPointer(ppSDString.getValue());
+        } finally {
+            PointerUtils.freeBytesPointer(pSD); // avoid memory leak
+            libKernel32.LocalFree(ppSDString.getValue()); // avoid memory leak
         }
     }
 
@@ -176,7 +247,7 @@ public abstract class AbstractWinFspFS implements WinFspFS {
     }
 
     private void initFSInterface(Runtime runtime, MountOptions options) {
-        fsHelper = new FSHelper(this, this.libWinFsp, this.libKernel32, this.libAdvapi32, options.hasDebug());
+        fsHelper = new FSHelper(this, this.libWinFsp, this.libAdvapi32, options.hasDebug());
         fsInterfaceP = FSP_FILE_SYSTEM_INTERFACE.create(runtime);
         FSP_FILE_SYSTEM_INTERFACE fsi = fsInterfaceP.get();
 
@@ -252,5 +323,9 @@ public abstract class AbstractWinFspFS implements WinFspFS {
         if (ntStatus != 0) {
             throw new MountException(function + " error", ntStatus);
         }
+    }
+
+    private static boolean bool(int val) {
+        return PointerUtils.BOOL(val);
     }
 }

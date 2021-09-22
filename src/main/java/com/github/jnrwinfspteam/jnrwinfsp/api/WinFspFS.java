@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-public interface WinFspFS extends Mountable {
+public interface WinFspFS {
     /**
      * Get volume information.
      *
@@ -49,7 +49,7 @@ public interface WinFspFS extends Mountable {
      *                           mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
      *                           which flags to use in its POSIX open() call.
      * @param fileAttributes     File attributes to apply to the newly created file or directory.
-     * @param securityDescriptor Security descriptor string to apply to the newly created file or directory. This security
+     * @param securityDescriptor Security descriptor to apply to the newly created file or directory. This security
      *                           descriptor will always be in self-relative format. Will be NULL for named streams.
      * @param allocationSize     Allocation size for the newly created file.
      * @param reparsePoint       (optional) Reparse point
@@ -59,7 +59,7 @@ public interface WinFspFS extends Mountable {
                     Set<CreateOptions> createOptions,
                     int grantedAccess,
                     Set<FileAttributes> fileAttributes,
-                    String securityDescriptor,
+                    byte[] securityDescriptor,
                     long allocationSize,
                     ReparsePoint reparsePoint
     ) throws NTStatusException;
@@ -307,21 +307,21 @@ public interface WinFspFS extends Mountable {
             throws NTStatusException;
 
     /**
-     * Get file or directory security descriptor string.
+     * Get file or directory security descriptor.
      *
      * @param fileSystem The file system on which this request is posted.
      * @param fileName   The name of the file or directory to get the security descriptor for.
      */
-    String getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    byte[] getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
 
     /**
      * Set file or directory security descriptor string.
      *
      * @param fileSystem            The file system on which this request is posted.
      * @param fileName              The name of the file or directory to set the security descriptor for.
-     * @param securityDescriptorStr A security descriptor string
+     * @param securityDescriptor A security descriptor
      */
-    void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, String securityDescriptorStr)
+    void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, byte[] securityDescriptor)
             throws NTStatusException;
 
     /**

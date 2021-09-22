@@ -14,7 +14,7 @@ public abstract class MemoryObj {
     private final MemoryObj parent;
     private Path path;
     private final Set<FileAttributes> fileAttributes;
-    private String securityDescriptor;
+    private byte[] securityDescriptor;
     private byte[] reparseData;
     private int reparseTag;
     private WinSysTime creationTime;
@@ -23,7 +23,7 @@ public abstract class MemoryObj {
     private WinSysTime changeTime;
     private long indexNumber;
 
-    public MemoryObj(MemoryObj parent, Path path, String securityDescriptor, ReparsePoint reparsePoint) {
+    public MemoryObj(MemoryObj parent, Path path, byte[] securityDescriptor, ReparsePoint reparsePoint) {
         this.parent = parent;
         this.path = Objects.requireNonNull(path);
         this.fileAttributes = EnumSet.noneOf(FileAttributes.class);
@@ -64,11 +64,11 @@ public abstract class MemoryObj {
         return fileAttributes;
     }
 
-    public final String getSecurityDescriptor() {
+    public final byte[] getSecurityDescriptor() {
         return securityDescriptor;
     }
 
-    public final void setSecurityDescriptor(String securityDescriptor) {
+    public final void setSecurityDescriptor(byte[] securityDescriptor) {
         this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
     }
 

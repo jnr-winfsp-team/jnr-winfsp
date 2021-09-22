@@ -7,7 +7,7 @@ import java.nio.file.Path;
 
 public class DirObj extends MemoryObj {
 
-    public DirObj(DirObj parent, Path path, String securityDescriptor, ReparsePoint reparsePoint) {
+    public DirObj(DirObj parent, Path path, byte[] securityDescriptor, ReparsePoint reparsePoint) {
         super(parent, path, securityDescriptor, reparsePoint);
         getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
     }

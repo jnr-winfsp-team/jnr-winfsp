@@ -3,10 +3,7 @@ package com.github.jnrwinfspteam.jnrwinfsp;
 import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.*;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.PointerUtils;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.SecurityUtils;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.*;
 import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
@@ -28,15 +25,13 @@ final class FSHelper {
 
     private final WinFspFS winfsp;
     private final LibWinFsp libWinFsp;
-    private final LibKernel32 libKernel32;
     private final LibAdvapi32 libAdvapi32;
 
     private final PrintStream verboseErr;
 
-    FSHelper(WinFspFS winfsp, LibWinFsp libWinFsp, LibKernel32 libKernel32, LibAdvapi32 libAdvapi32, boolean debug) {
+    FSHelper(WinFspFS winfsp, LibWinFsp libWinFsp, LibAdvapi32 libAdvapi32, boolean debug) {
         this.winfsp = Objects.requireNonNull(winfsp);
         this.libWinFsp = Objects.requireNonNull(libWinFsp);
-        this.libKernel32 = Objects.requireNonNull(libKernel32);
         this.libAdvapi32 = Objects.requireNonNull(libAdvapi32);
 
         this.verboseErr = debug ? System.err : new PrintStream(OutputStream.nullOutputStream());
@@ -104,10 +99,8 @@ final class FSHelper {
                 if (pFileAttributes != null)
                     pFileAttributes.putInt(0, FileAttributes.intOf(sr.getFileAttributes()));
 
-                SecurityUtils.fromString(
-                        libWinFsp,
-                        libKernel32,
-                        libAdvapi32,
+                SecurityDescriptorUtils.fromBytes(
+                        RUNTIME,
                         sr.getSecurityDescriptor(),
                         pSecurityDescriptor,
                         pSecurityDescriptorSize
@@ -128,9 +121,7 @@ final class FSHelper {
                           ppFileContext, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
-                String securityDescriptorStr = SecurityUtils.toString(
-                        libWinFsp,
-                        libKernel32,
+                byte[] securityDescriptor = SecurityDescriptorUtils.toBytes(
                         libAdvapi32,
                         pSecurityDescriptor
                 );
@@ -148,7 +139,7 @@ final class FSHelper {
                         CreateOptions.setOf(createOptions),
                         grantedAccess,
                         FileAttributes.setOf(fileAttributes),
-                        securityDescriptorStr,
+                        securityDescriptor,
                         allocationSize,
                         reparsePoint
                 );
@@ -397,13 +388,11 @@ final class FSHelper {
         fsi.GetSecurity.set((pFS, pFileContext, pSecurityDescriptor, pSecurityDescriptorSize) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileContext);
-                String securityDescriptorStr = winfsp.getSecurity(fs(pFS), fileName);
+                byte[] securityDescriptor = winfsp.getSecurity(fs(pFS), fileName);
 
-                SecurityUtils.fromString(
-                        libWinFsp,
-                        libKernel32,
-                        libAdvapi32,
-                        securityDescriptorStr,
+                SecurityDescriptorUtils.fromBytes(
+                        RUNTIME,
+                        securityDescriptor,
                         pSecurityDescriptor,
                         pSecurityDescriptorSize
                 );
@@ -421,17 +410,17 @@ final class FSHelper {
         fsi.SetSecurity.set((pFS, pFileContext, securityInformation, pModificationDescriptor) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileContext);
-                String securityDescriptorStr = winfsp.getSecurity(fs(pFS), fileName);
-                String modifiedSecurityDescriptorStr = SecurityUtils.modify(
+                byte[] securityDescriptor = winfsp.getSecurity(fs(pFS), fileName);
+                byte[] modifiedSecurityDescriptor = SecurityDescriptorUtils.modify(
+                        RUNTIME,
                         libWinFsp,
-                        libKernel32,
                         libAdvapi32,
-                        securityDescriptorStr,
+                        securityDescriptor,
                         securityInformation,
                         pModificationDescriptor
                 );
 
-                winfsp.setSecurity(fs(pFS), fileName, modifiedSecurityDescriptorStr);
+                winfsp.setSecurity(fs(pFS), fileName, modifiedSecurityDescriptor);
 
                 return 0;
             } catch (NTStatusException e) {

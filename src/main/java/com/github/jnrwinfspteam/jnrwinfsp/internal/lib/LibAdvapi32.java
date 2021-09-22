@@ -27,4 +27,8 @@ public interface LibAdvapi32 {
             @Out PointerByReference /* LPWSTR */ ppStringSecurityDescriptor,
             Pointer /* ULONG */ stringSecurityDescriptorLen
     );
+
+    int GetSecurityDescriptorLength(
+            /* PSECURITY_DESCRIPTOR */ Pointer pSecurityDescriptor
+    );
 }

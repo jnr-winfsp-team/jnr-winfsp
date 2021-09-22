@@ -40,7 +40,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
                            Set<CreateOptions> createOptions,
                            int grantedAccess,
                            Set<FileAttributes> fileAttributes,
-                           String securityDescriptorString,
+                           byte[] securityDescriptor,
                            long allocationSize,
                            ReparsePoint reparsePoint) throws NTStatusException {
         return null;
@@ -149,7 +149,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public String getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public byte[] getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
         return null;
     }
 
@@ -157,7 +157,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @NotImplemented
     public void setSecurity(FSP_FILE_SYSTEM fileSystem,
                             String fileName,
-                            String securityDescriptorStr) throws NTStatusException {
+                            byte[] securityDescriptor) throws NTStatusException {
     }
 
     @Override

@@ -21,6 +21,23 @@ public class PointerUtils {
         return bytes;
     }
 
+    public static Pointer fromBytes(Runtime runtime, byte[] bytes) {
+        return fromBytes(runtime, bytes, 0, bytes.length);
+    }
+
+    public static Pointer fromBytes(Runtime runtime, byte[] bytes, int offset, int length) {
+        if (bytes == null)
+            return null;
+
+        Pointer pBytes = allocateMemory(runtime, length);
+        pBytes.put(0, bytes, offset, length);
+        return pBytes;
+    }
+
+    public static void freeBytesPointer(Pointer pBytes) {
+        freeMemory(pBytes);
+    }
+
     public static boolean BOOLEAN(byte val) {
         return val != 0; // JNR conversion to boolean is not working correctly, so we need to do it here
     }

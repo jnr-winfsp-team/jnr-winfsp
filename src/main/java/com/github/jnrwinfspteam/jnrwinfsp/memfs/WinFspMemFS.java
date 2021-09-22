@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * A simple in-memory file system.
  */
 public class WinFspMemFS extends WinFspStubFS {
-    public static void main(String[] args) throws MountException, IOException {
+    public static void main(String[] args) throws MountException, IOException, NTStatusException {
         Path mountPoint = null;
         if (args.length > 0)
             mountPoint = Path.of(args[0]);
@@ -58,14 +58,19 @@ public class WinFspMemFS extends WinFspStubFS {
 
     private final PrintStream verboseOut;
 
-    public WinFspMemFS() {
+    public WinFspMemFS() throws NTStatusException {
         this(false);
     }
 
-    public WinFspMemFS(boolean verbose) {
+    public WinFspMemFS(boolean verbose) throws NTStatusException {
         this.rootPath = Path.of("\\").normalize();
         this.objects = new HashMap<>();
-        this.objects.put(rootPath.toString(), new DirObj(null, rootPath, SECURITY_DESCRIPTOR, null));
+        this.objects.put(rootPath.toString(), new DirObj(
+                null,
+                rootPath,
+                securityDescriptorToBytes(SECURITY_DESCRIPTOR),
+                null
+        ));
 
         this.nextIndexNumber = 1L;
         this.volumeLabel = "MemFS";
@@ -101,9 +106,10 @@ public class WinFspMemFS extends WinFspStubFS {
                 return Optional.empty();
 
             MemoryObj obj = getObject(filePath);
-            String securityDescriptor = obj.getSecurityDescriptor();
+            byte[] securityDescriptor = obj.getSecurityDescriptor();
             FileInfo info = obj.generateFileInfo();
-            verboseOut.printf("== GET SECURITY BY NAME RETURNED == %s %s%n", securityDescriptor, info);
+            verboseOut.printf("== GET SECURITY BY NAME RETURNED == %s %s%n",
+                    securityDescriptorToString(securityDescriptor), info);
 
             return Optional.of(new SecurityResult(securityDescriptor, EnumSet.copyOf(obj.getFileAttributes())));
         }
@@ -115,12 +121,13 @@ public class WinFspMemFS extends WinFspStubFS {
                            Set<CreateOptions> createOptions,
                            int grantedAccess,
                            Set<FileAttributes> fileAttributes,
-                           String securityDescriptor,
+                           byte[] securityDescriptor,
                            long allocationSize,
                            ReparsePoint reparsePoint) throws NTStatusException {
 
         verboseOut.printf("== CREATE == %s co=%s ga=%X fa=%s sd=%s as=%d rp=%s%n",
-                fileName, createOptions, grantedAccess, fileAttributes, securityDescriptor, allocationSize, reparsePoint
+                fileName, createOptions, grantedAccess, fileAttributes,
+                securityDescriptorToString(securityDescriptor), allocationSize, reparsePoint
         );
         synchronized (objects) {
             Path filePath = getPath(fileName);
@@ -437,25 +444,25 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public String getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public byte[] getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
 
         verboseOut.printf("== GET SECURITY == %s%n", fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj memObj = getObject(filePath);
 
-            String securityDescriptor = memObj.getSecurityDescriptor();
-            verboseOut.printf("== GET SECURITY RETURNED == %s%n", securityDescriptor);
+            byte[] securityDescriptor = memObj.getSecurityDescriptor();
+            verboseOut.printf("== GET SECURITY RETURNED == %s%n", securityDescriptorToString(securityDescriptor));
 
             return securityDescriptor;
         }
     }
 
     @Override
-    public void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, String securityDescriptor)
+    public void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, byte[] securityDescriptor)
             throws NTStatusException {
 
-        verboseOut.printf("== SET SECURITY == %s sd=%s%n", fileName, securityDescriptor);
+        verboseOut.printf("== SET SECURITY == %s sd=%s%n", fileName, securityDescriptorToString(securityDescriptor));
         synchronized (objects) {
             Path filePath = getPath(fileName);
             MemoryObj memObj = getObject(filePath);

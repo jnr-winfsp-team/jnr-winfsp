@@ -11,6 +11,9 @@ public class WinSysTime {
      */
     public static final Instant ZERO = Instant.parse("1601-01-01T00:00:00Z");
 
+    // (10^-7)s intervals between midnight 1 January 1601 (NT time epoch) and midnight 1 January 1970 (UNIX time epoch)
+    private static final long TENTH_MICROS_BETWEEN_EPOCHS = 116444736000000000L;
+
     /**
      * Returns a new WinSysTime object with the current time.
      *
@@ -27,9 +30,12 @@ public class WinSysTime {
      * @return a new WinSysTime object
      */
     public static WinSysTime fromInstant(Instant instant) {
-        Duration duration = Duration.between(ZERO, instant);
-        long fileTime = duration.getSeconds() * 10_000_000 + duration.getNano() / 100;
+        // Duration duration = Duration.between(ZERO, instant);
+        // long fileTime = (duration.getSeconds() * 10_000_000) + (duration.getNano() / 100);
 
+        long fileTime = TENTH_MICROS_BETWEEN_EPOCHS
+                + (instant.getEpochSecond() * 10_000_000)
+                + (instant.getNano() / 100);
         return new WinSysTime(fileTime);
     }
 
@@ -60,10 +66,16 @@ public class WinSysTime {
      * @return a time instant representing this WinSysTime object
      */
     public final Instant toInstant() {
-        Duration duration = Duration.of(fileTime / 10, ChronoUnit.MICROS)
-                .plus(fileTime % 10 * 100, ChronoUnit.NANOS);
+        // Duration duration = Duration.of(fileTime / 10, ChronoUnit.MICROS)
+        //         .plus(fileTime % 10 * 100, ChronoUnit.NANOS);
+        //
+        // return ZERO.plus(duration);
 
-        return ZERO.plus(duration);
+        long unixTenthMicros = fileTime - TENTH_MICROS_BETWEEN_EPOCHS;
+        long unixSeconds = unixTenthMicros / 10_000_000;
+        int unixNanos = (int)((unixTenthMicros % 10_000_000) * 100);
+
+        return Instant.ofEpochSecond(unixSeconds, unixNanos);
     }
 
     @Override

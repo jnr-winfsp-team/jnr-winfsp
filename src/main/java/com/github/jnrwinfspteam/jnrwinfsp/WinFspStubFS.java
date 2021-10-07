@@ -8,6 +8,7 @@ import jnr.ffi.Pointer;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Extend this class and override only the operations you wish to implement. The remaining operations
@@ -162,11 +163,11 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem,
-                                        String fileName,
-                                        String pattern,
-                                        String marker) throws NTStatusException {
-        return null;
+    public void readDirectory(FSP_FILE_SYSTEM fileSystem,
+                              String dirName,
+                              String pattern,
+                              String marker,
+                              Predicate<FileInfo> consumer) throws NTStatusException {
     }
 
     @Override

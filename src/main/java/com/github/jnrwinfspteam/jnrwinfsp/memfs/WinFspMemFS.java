@@ -9,7 +9,7 @@ import jnr.ffi.Pointer;
 import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 /**
  * A simple in-memory file system.
@@ -47,7 +47,7 @@ public class WinFspMemFS extends WinFspStubFS {
 
     private static final String SECURITY_DESCRIPTOR = "O:BAG:BAD:PAR(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;WD)";
     private static final Comparator<String> NATURAL_ORDER = new NaturalOrderComparator();
-    private static final long MAX_FILE_NODES = 1024;
+    private static final long MAX_FILE_NODES = 10240;
     private static final long MAX_FILE_SIZE = 16 * 1024 * 1024;
 
     private final Path rootPath;
@@ -473,50 +473,44 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem, String fileName, String pattern, String marker)
-            throws NTStatusException {
+    public void readDirectory(FSP_FILE_SYSTEM fileSystem,
+                              String fileName,
+                              String pattern,
+                              String marker,
+                              Predicate<FileInfo> consumer) throws NTStatusException {
 
         verboseOut.printf("== READ DIRECTORY == %s pa=%s ma=%s%n", fileName, pattern, marker);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             DirObj dir = getDirObject(filePath);
-            List<FileInfo> entries = new ArrayList<>();
 
             // only add the "." and ".." entries if the directory is not root
             if (!dir.getPath().equals(rootPath)) {
-                // handle marker special cases (??)
                 if (marker == null)
-                    entries.add(dir.generateFileInfo("."));
+                    if (!consumer.test(dir.generateFileInfo(".")))
+                        return;
                 if (marker == null || marker.equals(".")) {
                     DirObj parentDir = getParentObject(filePath);
-                    entries.add(parentDir.generateFileInfo(".."));
+                    if (!consumer.test(parentDir.generateFileInfo("..")))
+                        return;
                     marker = null;
                 }
             }
 
-            // include only direct children with relative names
-            for (var obj : objects.values()) {
-                MemoryObj parent = obj.getParent();
-                if (parent != null && parent.getPath().equals(dir.getPath())) {
-                    entries.add(obj.generateFileInfo(obj.getName()));
-                }
-            }
-
-            // sort the entries by file name in a natural order (1, 2, 10, 20, 100, etc.)
-            entries.sort(Comparator.comparing(FileInfo::getFileName, NATURAL_ORDER));
-
-            // filter out all results before the marker, if it's set
-            if (marker != null) {
-                final String marker_ = marker;
-                entries = entries.stream()
-                        .dropWhile(e -> NATURAL_ORDER.compare(e.getFileName(), marker_) <= 0)
-                        .collect(Collectors.toList());
-            }
-
-            verboseOut.printf("== READ DIRECTORY RETURNED == %s%n", entries);
-
-            return entries;
+            final String finalMarker = marker;
+            objects.values().stream()
+                    .filter(obj -> obj.getParent() != null &&
+                            obj.getParent().getPath().equals(dir.getPath()))
+                    .sorted(Comparator.comparing(MemoryObj::getName, NATURAL_ORDER))
+                    .dropWhile(obj -> isBeforeMarker(obj.getName(), finalMarker))
+                    .map(obj -> obj.generateFileInfo(obj.getName()))
+                    .takeWhile(consumer)
+                    .forEach(o -> {});
         }
+    }
+
+    private static boolean isBeforeMarker(String name, String marker) {
+        return marker != null && NATURAL_ORDER.compare(name, marker) <= 0;
     }
 
     @Override

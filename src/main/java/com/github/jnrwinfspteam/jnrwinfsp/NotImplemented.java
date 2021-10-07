@@ -18,7 +18,7 @@ import static java.lang.annotation.ElementType.METHOD;
  * <ol>
  *     <li>Certain calls behave differently if other calls are defined or not (e.g. if both CanDelete and SetDelete are
  *     defined, SetDelete takes precedence)</li>
- *     <li>For performance reasons; if a method is not registered in FSP_FILE_SYSTEM_INTERFACE then native->java call
+ *     <li>For performance reasons; if a method is not registered in FSP_FILE_SYSTEM_INTERFACE then native -> java call
  *     won't be performed.</li>
  * </ol>
  */

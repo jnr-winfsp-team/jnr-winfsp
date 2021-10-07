@@ -6,6 +6,8 @@ import jnr.ffi.Pointer;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.IntConsumer;
+import java.util.function.Predicate;
 
 public interface WinFspFS {
     /**
@@ -317,29 +319,33 @@ public interface WinFspFS {
     /**
      * Set file or directory security descriptor string.
      *
-     * @param fileSystem            The file system on which this request is posted.
-     * @param fileName              The name of the file or directory to set the security descriptor for.
+     * @param fileSystem         The file system on which this request is posted.
+     * @param fileName           The name of the file or directory to set the security descriptor for.
      * @param securityDescriptor A security descriptor
      */
     void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, byte[] securityDescriptor)
             throws NTStatusException;
 
     /**
-     * Read a directory. Returns a list of FileInfo.
-     * <p>
-     * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
+     * Reads a directory. Each directory entry is passed to the given consumer.
+     * This method may be called multiple times for a given directory, each time with a different marker.
      *
      * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the directory to be read.
+     * @param dirName    The name of the directory to be read.
      * @param pattern    The pattern to match against files in this directory. Can be NULL. The file system
      *                   can choose to ignore this parameter as the FSD will always perform its own pattern
      *                   matching on the returned results.
      * @param marker     A file name that marks where in the directory to start reading. Files with names
      *                   that are greater than (not equal to) this marker (in the directory order determined
      *                   by the file system) should be returned. Can be NULL.
+     * @param consumer   A consumer that accepts directory entries, one by one. Will return true while more
+     *                   entries can be added, and false when no more can be added due to lack of memory.
      */
-    List<FileInfo> readDirectory(FSP_FILE_SYSTEM fileSystem, String fileName, String pattern, String marker)
-            throws NTStatusException;
+    void readDirectory(FSP_FILE_SYSTEM fileSystem,
+                       String dirName,
+                       String pattern,
+                       String marker,
+                       Predicate<FileInfo> consumer) throws NTStatusException;
 
     /**
      * Get directory information for a single file or directory within a parent directory.

@@ -15,7 +15,6 @@ import java.io.PrintStream;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -436,33 +435,45 @@ final class FSHelper {
             try {
                 String pattern = StringUtils.fromPointer(pPattern);
                 String marker = StringUtils.fromPointer(pMarker);
-                List<FileInfo> fileInfos = winfsp.readDirectory(
+
+                class MutableBoolean {
+                    boolean bool;
+                }
+                MutableBoolean allAdded = new MutableBoolean();
+                allAdded.bool = true;
+
+                winfsp.readDirectory(
                         fs(pFS),
                         StringUtils.fromPointer(pFileContext),
                         pattern,
-                        marker
+                        marker,
+                        (fi) -> {
+                            if (!allAdded.bool)
+                                return false;
+
+                            String fileName = fi.getFileName();
+                            byte[] fileNameBytes = StringUtils.toBytes(fileName, false);
+
+                            Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
+                            _putDirInfo(diP.get(), fi, fileNameBytes);
+
+                            byte added = libWinFsp.FspFileSystemAddDirInfo(
+                                    diP.getPointer(),
+                                    pBuffer,
+                                    length,
+                                    pBytesTransferred
+                            );
+                            diP.free(); // avoid memory leak
+
+                            allAdded.bool &= bool(added);
+
+                            return bool(added);
+                        }
                 );
 
-                for (var fi : fileInfos) {
-                    String fileName = fi.getFileName();
-                    byte[] fileNameBytes = StringUtils.toBytes(fileName, false);
-
-                    Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
-                    _putDirInfo(diP.get(), fi, fileNameBytes);
-
-                    byte added = libWinFsp.FspFileSystemAddDirInfo(
-                            diP.getPointer(),
-                            pBuffer,
-                            length,
-                            pBytesTransferred
-                    );
-                    diP.free(); // avoid memory leak
-                    if (!bool(added))
-                        return 0; // abort but with no error
-                }
-
                 // add one final null entry to mark the end of the operation
-                libWinFsp.FspFileSystemAddDirInfo(null, pBuffer, length, pBytesTransferred);
+                if (allAdded.bool)
+                    libWinFsp.FspFileSystemAddDirInfo(null, pBuffer, length, pBytesTransferred);
 
                 return 0;
             } catch (NTStatusException e) {

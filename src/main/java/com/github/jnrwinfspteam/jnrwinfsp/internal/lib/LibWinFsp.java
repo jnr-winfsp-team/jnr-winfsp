@@ -1,5 +1,7 @@
 package com.github.jnrwinfspteam.jnrwinfsp.internal.lib;
 
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.WinPathUtils;
+import jnr.ffi.LibraryLoader;
 import jnr.ffi.Pointer;
 import jnr.ffi.annotations.Delegate;
 import jnr.ffi.annotations.Out;
@@ -9,6 +11,11 @@ import jnr.ffi.types.u_int32_t;
 import jnr.ffi.types.u_int8_t;
 
 public interface LibWinFsp {
+
+    static final LibWinFsp INSTANCE = LibraryLoader.create(LibWinFsp.class)
+            .library(WinPathUtils.getWinFspPath())
+            .failImmediately()
+            .load();
 
     /**
      * Check whether creating a file system object is possible.

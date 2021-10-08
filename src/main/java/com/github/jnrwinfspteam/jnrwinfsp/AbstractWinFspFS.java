@@ -6,10 +6,8 @@ import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM_INTERF
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.PointerUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.WinPathUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS.FSAttr;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
-import jnr.ffi.LibraryLoader;
 import jnr.ffi.NativeType;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
@@ -35,9 +33,6 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
                     | LibAdvapi32.DACL_SECURITY_INFORMATION
                     | LibAdvapi32.SACL_SECURITY_INFORMATION;
 
-    private final LibWinFsp libWinFsp;
-    private final LibKernel32 libKernel32;
-    private final LibAdvapi32 libAdvapi32;
     private final Object mountLock;
     private boolean mounted;
     private final Set<String> notImplementedMethods;
@@ -48,18 +43,6 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
     private Pointer pFileSystem;
 
     public AbstractWinFspFS() {
-        this.libWinFsp = LibraryLoader.create(LibWinFsp.class)
-                .library(WinPathUtils.getWinFspPath())
-                .failImmediately()
-                .load();
-        this.libKernel32 = LibraryLoader.create(LibKernel32.class)
-                .library("kernel32.dll")
-                .failImmediately()
-                .load();
-        this.libAdvapi32 = LibraryLoader.create(LibAdvapi32.class)
-                .library("Advapi32.dll")
-                .failImmediately()
-                .load();
         this.mountLock = new Object();
         this.mounted = false;
         this.notImplementedMethods = Arrays.stream(this.getClass().getMethods())
@@ -74,37 +57,9 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
     }
 
     @Override
-    public final void mountLocalDriveAsAService(String serviceName, Path mountPoint, MountOptions options)
-            throws MountException {
-        Objects.requireNonNull(serviceName);
-        Objects.requireNonNull(options);
-        checkMountStatus("FspServiceRunEx", libWinFsp.FspServiceRunEx(
-                StringUtils.toBytes(serviceName, true),
-                (pService, argc, argv) -> {
-                    try {
-                        mount(mountPoint, options);
-                        return 0;
-                    }
-                    catch (MountException e) {
-                        return e.getNtStatus();
-                    }
-                },
-                (pService) -> {
-                    unmountLocalDrive();
-                    return 0;
-                },
-                null,
-                null
-        ));
-    }
-
-    @Override
     public final void mountLocalDrive(Path mountPoint, MountOptions options) throws MountException {
         Objects.requireNonNull(options);
-        mount(mountPoint, options);
-    }
 
-    private void mount(Path mountPoint, MountOptions options) throws MountException {
         synchronized (mountLock) {
             if (mounted)
                 throw new MountException("WinFsp local drive is already mounted", 0xC01C001A); // STATUS_FLT_VOLUME_ALREADY_MOUNTED
@@ -115,7 +70,7 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
                 initFSInterface(runtime, options);
 
                 var ppFileSystem = new PointerByReference();
-                checkMountStatus("FileSystemCreate", libWinFsp.FspFileSystemCreate(
+                checkMountStatus("FileSystemCreate", LibWinFsp.INSTANCE.FspFileSystemCreate(
                         StringUtils.toBytes(FSP.FSCTL_DISK_DEVICE_NAME, true),
                         volumeParamsP.getPointer(),
                         fsInterfaceP.getPointer(),
@@ -124,26 +79,26 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
                 pFileSystem = ppFileSystem.getValue();
 
                 if (options.hasDebug()) {
-                    Pointer stdErrHandle = libKernel32.GetStdHandle(LibKernel32.STD_ERROR_HANDLE);
-                    libWinFsp.FspDebugLogSetHandle(stdErrHandle);
-                    libWinFsp.FspFileSystemSetDebugLogF(pFileSystem, -1);
+                    Pointer stdErrHandle = LibKernel32.INSTANCE.GetStdHandle(LibKernel32.STD_ERROR_HANDLE);
+                    LibWinFsp.INSTANCE.FspDebugLogSetHandle(stdErrHandle);
+                    LibWinFsp.INSTANCE.FspFileSystemSetDebugLogF(pFileSystem, -1);
                 }
 
-                checkMountStatus("SetMountPoint", libWinFsp.FspFileSystemSetMountPoint(
+                checkMountStatus("SetMountPoint", LibWinFsp.INSTANCE.FspFileSystemSetMountPoint(
                         pFileSystem,
                         mountPoint == null ? null : StringUtils.toBytes(mountPoint.toString(), true)
                 ));
 
-                checkMountStatus("StartDispatcher", libWinFsp.FspFileSystemStartDispatcher(
+                checkMountStatus("StartDispatcher", LibWinFsp.INSTANCE.FspFileSystemStartDispatcher(
                         pFileSystem,
                         0
                 ));
 
             } catch (Throwable t) {
                 if (pFileSystem != null) {
-                    libWinFsp.FspFileSystemStopDispatcher(pFileSystem);
-                    libWinFsp.FspFileSystemRemoveMountPoint(pFileSystem);
-                    libWinFsp.FspFileSystemDelete(pFileSystem);
+                    LibWinFsp.INSTANCE.FspFileSystemStopDispatcher(pFileSystem);
+                    LibWinFsp.INSTANCE.FspFileSystemRemoveMountPoint(pFileSystem);
+                    LibWinFsp.INSTANCE.FspFileSystemDelete(pFileSystem);
                 }
                 freeStructs();
                 throw t;
@@ -160,9 +115,9 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
                 return;
 
             if (pFileSystem != null) {
-                libWinFsp.FspFileSystemStopDispatcher(pFileSystem);
-                libWinFsp.FspFileSystemRemoveMountPoint(pFileSystem);
-                libWinFsp.FspFileSystemDelete(pFileSystem);
+                LibWinFsp.INSTANCE.FspFileSystemStopDispatcher(pFileSystem);
+                LibWinFsp.INSTANCE.FspFileSystemRemoveMountPoint(pFileSystem);
+                LibWinFsp.INSTANCE.FspFileSystemDelete(pFileSystem);
             }
             freeStructs();
 
@@ -185,7 +140,7 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
         Pointer psdSize = PointerUtils.allocateMemory(runtime, uLongSize);
 
         // Do the conversion from a string to a security descriptor
-        boolean res = bool(libAdvapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+        boolean res = bool(LibAdvapi32.INSTANCE.ConvertStringSecurityDescriptorToSecurityDescriptorW(
                 pStringSecurityDescriptor,
                 LibAdvapi32.SDDL_REVISION_1,
                 ppSD,
@@ -194,7 +149,7 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
         if (!res) {
             StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
             PointerUtils.freeMemory(psdSize); // avoid memory leak
-            throw new NTStatusException(libWinFsp.FspNtStatusFromWin32(runtime.getLastError()));
+            throw new NTStatusException(LibWinFsp.INSTANCE.FspNtStatusFromWin32(runtime.getLastError()));
         }
 
         try {
@@ -204,7 +159,7 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
         } finally {
             StringUtils.freeStringPointer(pStringSecurityDescriptor); // avoid memory leak
             PointerUtils.freeMemory(psdSize); // avoid memory leak
-            libKernel32.LocalFree(ppSD.getValue()); // avoid memory leak
+            LibKernel32.INSTANCE.LocalFree(ppSD.getValue()); // avoid memory leak
         }
     }
 
@@ -217,7 +172,7 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
         // Prepare a pointer to a pointer in order to store the converted security descriptor string
         PointerByReference ppSDString = new PointerByReference();
 
-        if (!bool(libAdvapi32.ConvertSecurityDescriptorToStringSecurityDescriptorW(
+        if (!bool(LibAdvapi32.INSTANCE.ConvertSecurityDescriptorToStringSecurityDescriptorW(
                 pSD,
                 LibAdvapi32.SDDL_REVISION_1,
                 REQUESTED_SECURITY_INFORMATION,
@@ -225,14 +180,14 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
                 null))
         ) {
             PointerUtils.freeBytesPointer(pSD); // avoid memory leak
-            throw new NTStatusException(libWinFsp.FspNtStatusFromWin32(runtime.getLastError()));
+            throw new NTStatusException(LibWinFsp.INSTANCE.FspNtStatusFromWin32(runtime.getLastError()));
         }
 
         try {
             return StringUtils.fromPointer(ppSDString.getValue());
         } finally {
             PointerUtils.freeBytesPointer(pSD); // avoid memory leak
-            libKernel32.LocalFree(ppSDString.getValue()); // avoid memory leak
+            LibKernel32.INSTANCE.LocalFree(ppSDString.getValue()); // avoid memory leak
         }
     }
 
@@ -276,7 +231,7 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
     }
 
     private void initFSInterface(Runtime runtime, MountOptions options) {
-        fsHelper = new FSHelper(this, this.libWinFsp, this.libAdvapi32, options.hasDebug());
+        fsHelper = new FSHelper(this, options.hasDebug());
         fsInterfaceP = FSP_FILE_SYSTEM_INTERFACE.create(runtime);
         FSP_FILE_SYSTEM_INTERFACE fsi = fsInterfaceP.get();
 

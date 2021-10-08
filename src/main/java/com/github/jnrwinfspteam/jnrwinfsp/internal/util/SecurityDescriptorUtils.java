@@ -9,8 +9,8 @@ import jnr.ffi.byref.PointerByReference;
 
 public class SecurityDescriptorUtils {
 
-    public static byte[] toBytes(LibAdvapi32 libAdvapi32, Pointer pSecurityDescriptor) {
-        int length = libAdvapi32.GetSecurityDescriptorLength(pSecurityDescriptor);
+    public static byte[] toBytes(Pointer pSecurityDescriptor) {
+        int length = LibAdvapi32.INSTANCE.GetSecurityDescriptorLength(pSecurityDescriptor);
         return PointerUtils.getBytes(pSecurityDescriptor, 0, length);
     }
 
@@ -43,8 +43,6 @@ public class SecurityDescriptorUtils {
     }
 
     public static byte[] modify(Runtime runtime,
-                                LibWinFsp libWinFsp,
-                                LibAdvapi32 libAdvapi32,
                                 byte[] securityDescriptor,
                                 int securityInformation,
                                 Pointer pModificationDescriptor) throws NTStatusException {
@@ -53,7 +51,7 @@ public class SecurityDescriptorUtils {
         Pointer pSD = PointerUtils.fromBytes(runtime, securityDescriptor);
         try {
             PointerByReference outDescriptor = new PointerByReference();
-            int status = libWinFsp.FspSetSecurityDescriptor(
+            int status = LibWinFsp.INSTANCE.FspSetSecurityDescriptor(
                     pSD,
                     securityInformation,
                     pModificationDescriptor,
@@ -63,7 +61,7 @@ public class SecurityDescriptorUtils {
             if (status != 0)
                 throw new NTStatusException(status);
 
-            return toBytes(libAdvapi32, outDescriptor.getValue());
+            return toBytes(outDescriptor.getValue());
         } finally {
             PointerUtils.freeBytesPointer(pSD); // avoid memory leak
         }

@@ -23,16 +23,10 @@ final class FSHelper {
     private static final Runtime RUNTIME = Runtime.getSystemRuntime();
 
     private final WinFspFS winfsp;
-    private final LibWinFsp libWinFsp;
-    private final LibAdvapi32 libAdvapi32;
-
     private final PrintStream verboseErr;
 
-    FSHelper(WinFspFS winfsp, LibWinFsp libWinFsp, LibAdvapi32 libAdvapi32, boolean debug) {
+    FSHelper(WinFspFS winfsp, boolean debug) {
         this.winfsp = Objects.requireNonNull(winfsp);
-        this.libWinFsp = Objects.requireNonNull(libWinFsp);
-        this.libAdvapi32 = Objects.requireNonNull(libAdvapi32);
-
         this.verboseErr = debug ? System.err : new PrintStream(OutputStream.nullOutputStream());
     }
 
@@ -80,7 +74,7 @@ final class FSHelper {
                 String fileName = StringUtils.fromPointer(pFileName);
                 Optional<SecurityResult> opSR = winfsp.getSecurityByName(fs(pFS), fileName);
                 if (opSR.isEmpty()) {
-                    byte res = libWinFsp.FspFileSystemFindReparsePoint(
+                    byte res = LibWinFsp.INSTANCE.FspFileSystemFindReparsePoint(
                             pFS,
                             newGetReparsePointByNameCallback(),
                             null,
@@ -120,10 +114,7 @@ final class FSHelper {
                           ppFileContext, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
-                byte[] securityDescriptor = SecurityDescriptorUtils.toBytes(
-                        libAdvapi32,
-                        pSecurityDescriptor
-                );
+                byte[] securityDescriptor = SecurityDescriptorUtils.toBytes(pSecurityDescriptor);
 
                 ReparsePoint reparsePoint = null;
                 if (pExtraBuffer != null && bool(extraBufferIsReparsePoint)) {
@@ -412,8 +403,6 @@ final class FSHelper {
                 byte[] securityDescriptor = winfsp.getSecurity(fs(pFS), fileName);
                 byte[] modifiedSecurityDescriptor = SecurityDescriptorUtils.modify(
                         RUNTIME,
-                        libWinFsp,
-                        libAdvapi32,
                         securityDescriptor,
                         securityInformation,
                         pModificationDescriptor
@@ -457,7 +446,7 @@ final class FSHelper {
                             Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
                             _putDirInfo(diP.get(), fi, fileNameBytes);
 
-                            byte added = libWinFsp.FspFileSystemAddDirInfo(
+                            byte added = LibWinFsp.INSTANCE.FspFileSystemAddDirInfo(
                                     diP.getPointer(),
                                     pBuffer,
                                     length,
@@ -473,7 +462,7 @@ final class FSHelper {
 
                 // add one final null entry to mark the end of the operation
                 if (allAdded.bool)
-                    libWinFsp.FspFileSystemAddDirInfo(null, pBuffer, length, pBytesTransferred);
+                    LibWinFsp.INSTANCE.FspFileSystemAddDirInfo(null, pBuffer, length, pBytesTransferred);
 
                 return 0;
             } catch (NTStatusException e) {
@@ -487,7 +476,7 @@ final class FSHelper {
     void initResolveReparsePoints(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.ResolveReparsePoints.set((pFS, pFileName, reparsePointIndex, resolveLastPathComponent, pIoStatus,
                                       pBuffer, pSize) -> {
-            return libWinFsp.FspFileSystemResolveReparsePoints(
+            return LibWinFsp.INSTANCE.FspFileSystemResolveReparsePoints(
                     pFS,
                     newGetReparsePointByNameCallback(),
                     null,
@@ -580,7 +569,7 @@ final class FSHelper {
 
         byte[] data = winfsp.getReparsePointData(fs, fileName);
         Pointer pCurrentReparseData = pointerFromBytes(data);
-        int status = libWinFsp.FspFileSystemCanReplaceReparsePoint(
+        int status = LibWinFsp.INSTANCE.FspFileSystemCanReplaceReparsePoint(
                 pCurrentReparseData,
                 data.length,
                 pReplaceReparseData,

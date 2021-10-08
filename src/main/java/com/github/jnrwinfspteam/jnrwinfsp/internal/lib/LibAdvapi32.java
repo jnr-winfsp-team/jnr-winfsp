@@ -1,11 +1,18 @@
 package com.github.jnrwinfspteam.jnrwinfsp.internal.lib;
 
+import jnr.ffi.LibraryLoader;
 import jnr.ffi.Pointer;
 import jnr.ffi.annotations.Out;
 import jnr.ffi.byref.PointerByReference;
 import jnr.ffi.types.u_int32_t;
 
 public interface LibAdvapi32 {
+
+    static final LibAdvapi32 INSTANCE = LibraryLoader.create(LibAdvapi32.class)
+            .library("Advapi32.dll")
+            .failImmediately()
+            .load();
+
     int SDDL_REVISION_1 = 1;
 
     int OWNER_SECURITY_INFORMATION = 0x00000001;

@@ -3,6 +3,8 @@ package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.WinFspStubFS;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM;
+import com.github.jnrwinfspteam.jnrwinfsp.service.ServiceException;
+import com.github.jnrwinfspteam.jnrwinfsp.service.ServiceRunner;
 import com.github.jnrwinfspteam.jnrwinfsp.util.NaturalOrderComparator;
 import jnr.ffi.Pointer;
 
@@ -15,14 +17,14 @@ import java.util.function.Predicate;
  * A simple in-memory file system.
  */
 public class WinFspMemFS extends WinFspStubFS {
-    public static void main(String[] args) throws NTStatusException, MountException {
+    public static void main(String[] args) throws NTStatusException, ServiceException {
         Path mountPoint = null;
         if (args.length > 0)
             mountPoint = Path.of(args[0]);
 
         var memFS = new WinFspMemFS();
         System.out.printf("Mounting %s ...%n", mountPoint == null ? "" : mountPoint);
-        memFS.mountLocalDriveAsAService("WinFspMemFs", mountPoint, new MountOptions()
+        ServiceRunner.mountLocalDriveAsService("WinFspMemFS", memFS, mountPoint, new MountOptions()
                 .setDebug(false)
                 .setCase(MountOptions.CaseOption.CASE_SENSITIVE)
                 .setSectorSize(512)
@@ -491,7 +493,8 @@ public class WinFspMemFS extends WinFspStubFS {
                     .dropWhile(obj -> isBeforeMarker(obj.getName(), finalMarker))
                     .map(obj -> obj.generateFileInfo(obj.getName()))
                     .takeWhile(consumer)
-                    .forEach(o -> {});
+                    .forEach(o -> {
+                    });
         }
     }
 

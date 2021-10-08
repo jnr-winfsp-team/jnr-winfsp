@@ -340,4 +340,63 @@ public interface LibWinFsp {
             @u_int32_t int eaLength,
             Pointer /* ULONG */ pBytesTransferred
     );
+
+    /**
+     * Run a service.
+     * <p>
+     * This function wraps calls to FspServiceCreate, FspServiceLoop and FspServiceDelete to create,
+     * run and delete a service. It is intended to be used from a service's main/wmain function.
+     * <p>
+     * This function runs a service with console mode allowed.
+     *
+     * @param serviceName  The name of the service.
+     * @param onStart      Function to call when the service starts.
+     * @param onStop       Function to call when the service stops.
+     * @param onControl    Function to call when the service receives a service control code.
+     * @param pUserContext Not used
+     * @return Service process exit code.
+     */
+    @u_int32_t
+    int FspServiceRunEx(byte[] serviceName,
+                        FspServiceStartCallback onStart,
+                        FspServiceStopCallback onStop,
+                        FspServiceControlCallback onControl,
+                        Pointer /* VOID */ pUserContext
+    );
+
+    @FunctionalInterface
+    interface FspServiceStartCallback {
+        /**
+         * @return STATUS_SUCCESS or error code.
+         */
+        @Delegate
+        @u_int32_t
+        int FspServiceStart(Pointer /* FSP_SERVICE */ pService,
+                            int argc,
+                            Pointer /* PWSTR */ argv
+        );
+    }
+
+    @FunctionalInterface
+    interface FspServiceStopCallback {
+        /**
+         * @return STATUS_SUCCESS or error code.
+         */
+        @Delegate
+        @u_int32_t
+        int FspServiceStop(Pointer /* FSP_SERVICE */ pService);
+    }
+
+    @FunctionalInterface
+    interface FspServiceControlCallback {
+        /**
+         * @return STATUS_SUCCESS or error code.
+         */
+        @Delegate
+        @u_int32_t
+        int FspServiceControl(Pointer /* FSP_SERVICE */ pService,
+                              int control,
+                              int eventType,
+                              Pointer /* VOID */ pEventData);
+    }
 }

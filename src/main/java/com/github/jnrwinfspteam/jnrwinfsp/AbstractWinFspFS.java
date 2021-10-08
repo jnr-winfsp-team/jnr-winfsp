@@ -74,11 +74,40 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
     }
 
     @Override
+    public final void mountLocalDriveAsAService(String serviceName, Path mountPoint, MountOptions options)
+            throws MountException {
+        Objects.requireNonNull(serviceName);
+        Objects.requireNonNull(options);
+        checkMountStatus("FspServiceRunEx", libWinFsp.FspServiceRunEx(
+                StringUtils.toBytes(serviceName, true),
+                (pService, argc, argv) -> {
+                    try {
+                        mount(mountPoint, options);
+                        return 0;
+                    }
+                    catch (MountException e) {
+                        return e.getNtStatus();
+                    }
+                },
+                (pService) -> {
+                    unmountLocalDrive();
+                    return 0;
+                },
+                null,
+                null
+        ));
+    }
+
+    @Override
     public final void mountLocalDrive(Path mountPoint, MountOptions options) throws MountException {
         Objects.requireNonNull(options);
+        mount(mountPoint, options);
+    }
+
+    private void mount(Path mountPoint, MountOptions options) throws MountException {
         synchronized (mountLock) {
             if (mounted)
-                throw new MountException("WinFsp local drive is already mounted");
+                throw new MountException("WinFsp local drive is already mounted", 0xC01C001A); // STATUS_FLT_VOLUME_ALREADY_MOUNTED
 
             try {
                 Runtime runtime = Runtime.getSystemRuntime();

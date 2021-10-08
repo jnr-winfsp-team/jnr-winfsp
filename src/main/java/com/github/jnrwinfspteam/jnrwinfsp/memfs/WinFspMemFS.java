@@ -15,33 +15,19 @@ import java.util.function.Predicate;
  * A simple in-memory file system.
  */
 public class WinFspMemFS extends WinFspStubFS {
-    public static void main(String[] args) throws MountException, IOException, NTStatusException {
+    public static void main(String[] args) throws NTStatusException, MountException {
         Path mountPoint = null;
         if (args.length > 0)
             mountPoint = Path.of(args[0]);
 
         var memFS = new WinFspMemFS();
         System.out.printf("Mounting %s ...%n", mountPoint == null ? "" : mountPoint);
-        memFS.mountLocalDrive(mountPoint, new MountOptions()
+        memFS.mountLocalDriveAsAService("WinFspMemFs", mountPoint, new MountOptions()
                 .setDebug(false)
                 .setCase(MountOptions.CaseOption.CASE_SENSITIVE)
                 .setSectorSize(512)
                 .setSectorsPerAllocationUnit(1)
         );
-        System.out.println("Mounted");
-        try {
-            System.out.println("<Press Enter to quit>");
-            try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
-                reader.readLine();
-            }
-//            memFS.objects.keySet().stream()
-//                    .sorted(NATURAL_ORDER)
-//                    .forEachOrdered(System.out::println);
-        } finally {
-            System.out.printf("Unmounting %s ...%n", mountPoint == null ? "" : mountPoint);
-            memFS.unmountLocalDrive();
-            System.out.println("<done>");
-        }
     }
 
 

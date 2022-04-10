@@ -11,6 +11,7 @@ public class MountOptions {
     private long fileInfoTimeout = 1000;
     private boolean wslFeatures = true;
     private int maxFileNameLength = 255;
+    private boolean forceBuiltinAdminOwnerAndGroup = false;
 
     /**
      * Sets "debug" option (default is {@code false}).
@@ -82,6 +83,18 @@ public class MountOptions {
         return this;
     }
 
+    /**
+     * Sets "Force Built-in Administrator Owner/Group" option (default is {@code false}).
+     *
+     * @param enable If true, then on Create, the Owner and Group of the security descriptor
+     *               will be set to the well known SID for the "Built-in Administrators"
+     *               (O:BA G:BA)
+     */
+    public MountOptions setForceBuiltinAdminOwnerAndGroup(boolean enable) {
+        this.forceBuiltinAdminOwnerAndGroup = enable;
+        return this;
+    }
+
     public boolean hasDebug() {
         return debug;
     }
@@ -108,6 +121,10 @@ public class MountOptions {
 
     public int getMaxFileNameLength() {
         return maxFileNameLength;
+    }
+
+    public boolean hasForceBuiltinAdminOwnerAndGroup() {
+        return forceBuiltinAdminOwnerAndGroup;
     }
 
     /**

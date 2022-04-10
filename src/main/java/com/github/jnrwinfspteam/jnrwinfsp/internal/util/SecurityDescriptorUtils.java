@@ -66,4 +66,111 @@ public class SecurityDescriptorUtils {
             PointerUtils.freeBytesPointer(pSD); // avoid memory leak
         }
     }
+
+    public static Pointer getLocalWellKnownSID(Runtime runtime, int wellKnownSID) throws NTStatusException {
+        Pointer pSize = PointerUtils.allocateMemory(runtime, Integer.BYTES);
+        try {
+            int ret = LibAdvapi32.INSTANCE.CreateWellKnownSid(
+                    wellKnownSID,
+                    null,
+                    null,
+                    pSize
+            );
+            if (PointerUtils.BOOL(ret))
+                throw new NTStatusException(0xC00000E5); // STATUS_INTERNAL_ERROR
+
+            Pointer pSID = PointerUtils.allocateMemory(runtime, pSize.getInt(0));
+            ret = LibAdvapi32.INSTANCE.CreateWellKnownSid(
+                    wellKnownSID,
+                    null,
+                    pSID,
+                    pSize
+            );
+            if (!PointerUtils.BOOL(ret))
+                throw new NTStatusException(0xC00000E5); // STATUS_INTERNAL_ERROR
+
+            return pSID;
+        } finally {
+            PointerUtils.freeMemory(pSize);
+        }
+    }
+
+    public static Pointer setOwnerAndGroup(Runtime runtime,
+                                           Pointer pSecurityDescriptor,
+                                           Pointer ownerSID,
+                                           Pointer groupSID) throws NTStatusException {
+
+        Pointer pASDSize = PointerUtils.allocateMemory(runtime, Integer.BYTES);
+        Pointer pSize1 = PointerUtils.allocateMemory(runtime, Integer.BYTES);
+        Pointer pSize2 = PointerUtils.allocateMemory(runtime, Integer.BYTES);
+        Pointer pSize3 = PointerUtils.allocateMemory(runtime, Integer.BYTES);
+        Pointer pSize4 = PointerUtils.allocateMemory(runtime, Integer.BYTES);
+        try {
+            int ret = LibAdvapi32.INSTANCE.MakeAbsoluteSD(
+                    pSecurityDescriptor,
+                    null, pASDSize,
+                    null, pSize1,
+                    null, pSize2,
+                    null, pSize3,
+                    null, pSize4
+            );
+            if (PointerUtils.BOOL(ret))
+                throw new NTStatusException(0xC00000E5); // STATUS_INTERNAL_ERROR
+
+            Pointer pASD = PointerUtils.allocateMemory(runtime, pASDSize.getInt(0));
+            Pointer pDiscard1 = PointerUtils.allocateMemory(runtime, pSize1.getInt(0));
+            Pointer pDiscard2 = PointerUtils.allocateMemory(runtime, pSize2.getInt(0));
+            Pointer pDiscard3 = PointerUtils.allocateMemory(runtime, pSize3.getInt(0));
+            Pointer pDiscard4 = PointerUtils.allocateMemory(runtime, pSize4.getInt(0));
+            try {
+                ret = LibAdvapi32.INSTANCE.MakeAbsoluteSD(
+                        pSecurityDescriptor,
+                        pASD, pASDSize,
+                        pDiscard1, pSize1,
+                        pDiscard2, pSize2,
+                        pDiscard3, pSize3,
+                        pDiscard4, pSize4
+                );
+                if (!PointerUtils.BOOL(ret)) {
+                    throw new NTStatusException(0xC00000E5); // STATUS_INTERNAL_ERROR
+                }
+
+                ret = LibAdvapi32.INSTANCE.SetSecurityDescriptorOwner(pASD, ownerSID, 0);
+                if (!PointerUtils.BOOL(ret))
+                    throw new NTStatusException(0xC00000E5); // STATUS_INTERNAL_ERROR
+
+                ret = LibAdvapi32.INSTANCE.SetSecurityDescriptorGroup(pASD, groupSID, 0);
+                if (!PointerUtils.BOOL(ret))
+                    throw new NTStatusException(0xC00000E5); // STATUS_INTERNAL_ERROR
+
+                Pointer pRSDSize = PointerUtils.allocateMemory(runtime, Integer.BYTES);
+                try {
+                    ret = LibAdvapi32.INSTANCE.MakeSelfRelativeSD(pASD, null, pRSDSize);
+                    if (PointerUtils.BOOL(ret))
+                        throw new NTStatusException(0xC00000E5); // STATUS_INTERNAL_ERROR
+
+                    Pointer pRSD = PointerUtils.allocateMemory(runtime, pRSDSize.getInt(0));
+                    ret = LibAdvapi32.INSTANCE.MakeSelfRelativeSD(pASD, pRSD, pRSDSize);
+                    if (!PointerUtils.BOOL(ret))
+                        throw new NTStatusException(0xC00000E5); // STATUS_INTERNAL_ERROR
+
+                    return pRSD;
+                } finally {
+                    PointerUtils.freeMemory(pRSDSize); // avoid memory leak
+                }
+            } finally {
+                PointerUtils.freeMemory(pASD); // avoid memory leak
+                PointerUtils.freeMemory(pDiscard1); // avoid memory leak
+                PointerUtils.freeMemory(pDiscard2); // avoid memory leak
+                PointerUtils.freeMemory(pDiscard3); // avoid memory leak
+                PointerUtils.freeMemory(pDiscard4); // avoid memory leak
+            }
+        } finally {
+            PointerUtils.freeMemory(pASDSize); // avoid memory leak
+            PointerUtils.freeMemory(pSize1); // avoid memory leak
+            PointerUtils.freeMemory(pSize2); // avoid memory leak
+            PointerUtils.freeMemory(pSize3); // avoid memory leak
+            PointerUtils.freeMemory(pSize4); // avoid memory leak
+        }
+    }
 }

@@ -29,11 +29,12 @@ public class WinFspMemFS extends WinFspStubFS {
                 .setCase(MountOptions.CaseOption.CASE_SENSITIVE)
                 .setSectorSize(512)
                 .setSectorsPerAllocationUnit(1)
+                .setForceBuiltinAdminOwnerAndGroup(true)
         );
     }
 
 
-    private static final String SECURITY_DESCRIPTOR = "O:BAG:BAD:PAR(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;WD)";
+    private static final String ROOT_SECURITY_DESCRIPTOR = "O:BAG:BAD:PAR(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;WD)";
     private static final Comparator<String> NATURAL_ORDER = new NaturalOrderComparator();
     private static final long MAX_FILE_NODES = 10240;
     private static final long MAX_FILE_SIZE = 16 * 1024 * 1024;
@@ -56,7 +57,7 @@ public class WinFspMemFS extends WinFspStubFS {
         this.objects.put(rootPath.toString(), new DirObj(
                 null,
                 rootPath,
-                securityDescriptorToBytes(SECURITY_DESCRIPTOR),
+                securityDescriptorToBytes(ROOT_SECURITY_DESCRIPTOR),
                 null
         ));
 

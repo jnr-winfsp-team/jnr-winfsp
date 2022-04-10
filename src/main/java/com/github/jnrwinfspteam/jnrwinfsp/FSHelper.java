@@ -1,10 +1,13 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
 import com.github.jnrwinfspteam.jnrwinfsp.api.*;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.*;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibAdvapi32;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibWinFsp;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.*;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.*;
-import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.PointerUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.SecurityDescriptorUtils;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 import jnr.ffi.Struct;
@@ -24,10 +27,31 @@ final class FSHelper {
 
     private final WinFspFS winfsp;
     private final PrintStream verboseErr;
+    private Pointer builtInAdminSID;
 
-    FSHelper(WinFspFS winfsp, boolean debug) {
+    FSHelper(WinFspFS winfsp, MountOptions options) throws MountException {
         this.winfsp = Objects.requireNonNull(winfsp);
-        this.verboseErr = debug ? System.err : new PrintStream(OutputStream.nullOutputStream());
+        this.verboseErr = options.hasDebug() ? System.err : new PrintStream(OutputStream.nullOutputStream());
+
+        try {
+            if (options.hasForceBuiltinAdminOwnerAndGroup()) {
+                this.builtInAdminSID = SecurityDescriptorUtils.getLocalWellKnownSID(
+                        RUNTIME,
+                        LibAdvapi32.WinBuiltinAdministratorsSid
+                );
+            } else {
+                this.builtInAdminSID = null;
+            }
+        } catch (NTStatusException e) {
+            throw new MountException("Could not retrieve well-known SID for 'Built-in Administrators'", e);
+        }
+    }
+
+    void free() {
+        if (this.builtInAdminSID != null) {
+            PointerUtils.freeBytesPointer(this.builtInAdminSID);
+            this.builtInAdminSID = null;
+        }
     }
 
     void initGetVolumeInfo(FSP_FILE_SYSTEM_INTERFACE fsi) {
@@ -114,7 +138,19 @@ final class FSHelper {
                           ppFileContext, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
-                byte[] securityDescriptor = SecurityDescriptorUtils.toBytes(pSecurityDescriptor);
+                final byte[] securityDescriptor;
+                if (this.builtInAdminSID == null) {
+                    securityDescriptor = SecurityDescriptorUtils.toBytes(pSecurityDescriptor);
+                } else {
+                    Pointer pSDWithOwnerAndGroupSet = SecurityDescriptorUtils.setOwnerAndGroup(
+                            RUNTIME,
+                            pSecurityDescriptor,
+                            builtInAdminSID,
+                            builtInAdminSID
+                    );
+                    securityDescriptor = SecurityDescriptorUtils.toBytes(pSDWithOwnerAndGroupSet);
+                    PointerUtils.freeMemory(pSDWithOwnerAndGroupSet); // avoid memory leak
+                }
 
                 ReparsePoint reparsePoint = null;
                 if (pExtraBuffer != null && bool(extraBufferIsReparsePoint)) {

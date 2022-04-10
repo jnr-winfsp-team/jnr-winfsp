@@ -1,13 +1,16 @@
 package com.github.jnrwinfspteam.jnrwinfsp;
 
 import com.github.jnrwinfspteam.jnrwinfsp.api.*;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.*;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.FSP;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibAdvapi32;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibKernel32;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibWinFsp;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM_INTERFACE;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.PointerUtils;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS.FSAttr;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.PointerUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
 import jnr.ffi.NativeType;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
@@ -230,8 +233,8 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
         }
     }
 
-    private void initFSInterface(Runtime runtime, MountOptions options) {
-        fsHelper = new FSHelper(this, options.hasDebug());
+    private void initFSInterface(Runtime runtime, MountOptions options) throws MountException {
+        fsHelper = new FSHelper(this, options);
         fsInterfaceP = FSP_FILE_SYSTEM_INTERFACE.create(runtime);
         FSP_FILE_SYSTEM_INTERFACE fsi = fsInterfaceP.get();
 
@@ -290,6 +293,10 @@ public abstract class AbstractWinFspFS implements Mountable, SecurityDescriptorH
     }
 
     private void freeStructs() {
+        if (fsHelper != null) {
+            fsHelper.free();
+            fsHelper = null;
+        }
         if (volumeParamsP != null) {
             volumeParamsP.free();
             volumeParamsP = null;

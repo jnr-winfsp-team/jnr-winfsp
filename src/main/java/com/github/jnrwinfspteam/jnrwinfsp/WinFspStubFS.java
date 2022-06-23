@@ -2,10 +2,8 @@ package com.github.jnrwinfspteam.jnrwinfsp;
 
 import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM;
-import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.Pointer;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -68,13 +66,13 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public void cleanup(FSP_FILE_SYSTEM fileSystem, String fileName, Set<CleanupFlags> flags) {
+    public void cleanup(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, Set<CleanupFlags> flags) {
 
     }
 
     @Override
     @NotImplemented
-    public void close(FSP_FILE_SYSTEM fileSystem, String fileName) {
+    public void close(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) {
 
     }
 
@@ -108,14 +106,14 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
         return null;
     }
 
     @Override
     @NotImplemented
     public FileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
-                                 String fileName,
+                                 OpenContext ctx,
                                  Set<FileAttributes> fileAttributes,
                                  WinSysTime creationTime,
                                  WinSysTime lastAccessTime,
@@ -135,14 +133,14 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public void canDelete(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public void canDelete(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
 
     }
 
     @Override
     @NotImplemented
     public void rename(FSP_FILE_SYSTEM fileSystem,
-                       String fileName,
+                       OpenContext ctx,
                        String newFileName,
                        boolean replaceIfExists) throws NTStatusException {
 
@@ -150,14 +148,14 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public byte[] getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public byte[] getSecurity(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
         return null;
     }
 
     @Override
     @NotImplemented
     public void setSecurity(FSP_FILE_SYSTEM fileSystem,
-                            String fileName,
+                            OpenContext ctx,
                             byte[] securityDescriptor) throws NTStatusException {
     }
 
@@ -179,19 +177,19 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public byte[] getReparsePointData(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public byte[] getReparsePointData(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
         return null;
     }
 
     @Override
     @NotImplemented
-    public void setReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName, byte[] reparseData, int reparseTag)
+    public void setReparsePoint(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, byte[] reparseData, int reparseTag)
             throws NTStatusException {
     }
 
     @Override
     @NotImplemented
-    public void deleteReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public void deleteReparsePoint(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
 
     }
 }

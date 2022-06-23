@@ -3,10 +3,8 @@ package com.github.jnrwinfspteam.jnrwinfsp.api;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM;
 import jnr.ffi.Pointer;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
 public interface WinFspFS {
@@ -89,7 +87,7 @@ public interface WinFspFS {
      * Overwrite a file.
      *
      * @param fileSystem            The file system on which this request is posted.
-     * @param fileName              The name of the file or directory being overwritten
+     * @param fileName              The name of the file being overwritten
      * @param fileAttributes        File attributes to apply to the overwritten file.
      * @param replaceFileAttributes When TRUE the existing file attributes should be replaced with the new ones.
      *                              When FALSE the existing file attributes should be merged (or'ed) with the new ones.
@@ -148,18 +146,18 @@ public interface WinFspFS {
      * the file was modified/deleted.
      *
      * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the file or directory to cleanup.
+     * @param ctx        The context of the file or directory to clean up.
      * @param flags      These flags determine whether the file was modified and whether to delete the file.
      */
-    void cleanup(FSP_FILE_SYSTEM fileSystem, String fileName, Set<CleanupFlags> flags);
+    void cleanup(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, Set<CleanupFlags> flags);
 
     /**
      * Close a file.
      *
      * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the file or directory to be closed.
+     * @param ctx        The context of the file or directory to be closed.
      */
-    void close(FSP_FILE_SYSTEM fileSystem, String fileName);
+    void close(FSP_FILE_SYSTEM fileSystem, OpenContext ctx);
 
     /**
      * Read a file.
@@ -212,15 +210,15 @@ public interface WinFspFS {
      * Get file or directory information.
      *
      * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the file or directory to get information for.
+     * @param ctx        The context of the file or directory to get information for.
      */
-    FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
 
     /**
      * Set file or directory basic information.
      *
      * @param fileSystem     The file system on which this request is posted.
-     * @param fileName       The name of the file or directory to set information for.
+     * @param ctx            The context of the file or directory to set information for.
      * @param fileAttributes File attributes to apply to the file or directory. If the value INVALID_FILE_ATTRIBUTES
      *                       is sent, the file attributes should not be changed.
      * @param creationTime   Creation time to apply to the file or directory. If the value 0 is sent, the creation
@@ -233,7 +231,7 @@ public interface WinFspFS {
      *                       should not be changed.
      */
     FileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
-                          String fileName,
+                          OpenContext ctx,
                           Set<FileAttributes> fileAttributes,
                           WinSysTime creationTime,
                           WinSysTime lastAccessTime,
@@ -273,22 +271,22 @@ public interface WinFspFS {
      * Determine whether a file or directory can be deleted.
      * <p>
      * This function tests whether a file or directory can be safely deleted. This function does
-     * not need to perform access checks, but may performs tasks such as check for empty
+     * not need to perform access checks, but may perform tasks such as check for empty
      * directories, etc.
      * <p>
      * This function should <b>NEVER</b> delete the file or directory in question. Deletion should
      * happen during Cleanup with the FspCleanupDelete flag set.
      * <p>
-     * This function gets called when Win32 API's such as DeleteFile or RemoveDirectory are used.
+     * This function gets called when Win32 APIs such as DeleteFile or RemoveDirectory are used.
      * It does not get called when a file or directory is opened with FILE_DELETE_ON_CLOSE.
      * <p>
      * NOTE: If both CanDelete and SetDelete are defined, SetDelete takes precedence. However
      * most file systems need only implement the CanDelete operation.
      *
      * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the file or directory to test for deletion.
+     * @param ctx        The context of the file or directory to test for deletion.
      */
-    void canDelete(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    void canDelete(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
 
     /**
      * Renames a file or directory.
@@ -301,29 +299,29 @@ public interface WinFspFS {
      * </ul>
      *
      * @param fileSystem      The file system on which this request is posted.
-     * @param fileName        The current name of the file or directory to rename.
+     * @param ctx             The context of the file or directory to rename.
      * @param newFileName     The new name for the file or directory.
      * @param replaceIfExists Whether to replace a file that already exists at NewFileName.
      */
-    void rename(FSP_FILE_SYSTEM fileSystem, String fileName, String newFileName, boolean replaceIfExists)
+    void rename(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, String newFileName, boolean replaceIfExists)
             throws NTStatusException;
 
     /**
      * Get file or directory security descriptor.
      *
      * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the file or directory to get the security descriptor for.
+     * @param ctx        The context of the file or directory to get the security descriptor for.
      */
-    byte[] getSecurity(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    byte[] getSecurity(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
 
     /**
      * Set file or directory security descriptor string.
      *
      * @param fileSystem         The file system on which this request is posted.
-     * @param fileName           The name of the file or directory to set the security descriptor for.
+     * @param ctx                The context of the file or directory to set the security descriptor for.
      * @param securityDescriptor A security descriptor
      */
-    void setSecurity(FSP_FILE_SYSTEM fileSystem, String fileName, byte[] securityDescriptor)
+    void setSecurity(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, byte[] securityDescriptor)
             throws NTStatusException;
 
     /**
@@ -362,26 +360,26 @@ public interface WinFspFS {
      * Get reparse point data.
      *
      * @param fileSystem The file system on which this request is posted
-     * @param fileName   The name of the file or directory to be read.
+     * @param ctx        The context of the file or directory to be read.
      */
-    byte[] getReparsePointData(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    byte[] getReparsePointData(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
 
     /**
      * Sets a reparse point.
      *
      * @param fileSystem  The file system on which this request is posted
-     * @param fileName    The name of the file or directory to be read
+     * @param ctx         The context of the file or directory to be read
      * @param reparseData The reparse point data
      * @param reparseTag  The reparse point tag
      */
-    void setReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName, byte[] reparseData, int reparseTag)
+    void setReparsePoint(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, byte[] reparseData, int reparseTag)
             throws NTStatusException;
 
     /**
      * Deletes a reparse point.
      *
      * @param fileSystem The file system on which this request is posted
-     * @param fileName   The name of the file or directory to be read
+     * @param ctx        The context of the file or directory to be read
      */
-    void deleteReparsePoint(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    void deleteReparsePoint(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
 }

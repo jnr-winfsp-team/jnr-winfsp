@@ -171,7 +171,7 @@ final class FSHelper {
                 );
 
                 putOpenFileInfo(pFileInfo, fi);
-                putFileContext(ppFileContext, fi.getFileName());
+                putFileContext(ppFileContext, fi);
 
                 return 0;
             } catch (NTStatusException e) {
@@ -194,7 +194,7 @@ final class FSHelper {
                 );
 
                 putOpenFileInfo(pFileInfo, fi);
-                putFileContext(ppFileContext, fi.getFileName());
+                putFileContext(ppFileContext, fi);
 
                 return 0;
             } catch (NTStatusException e) {
@@ -208,10 +208,9 @@ final class FSHelper {
     void initOverwrite(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Overwrite.set((pFS, pFileContext, fileAttributes, replaceFileAttributes, allocationSize, pFileInfo) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileContext);
                 FileInfo fi = winfsp.overwrite(
                         fs(pFS),
-                        fileName,
+                        ctx(pFileContext).getPath(),
                         FileAttributes.setOf(fileAttributes),
                         bool(replaceFileAttributes),
                         allocationSize
@@ -230,11 +229,10 @@ final class FSHelper {
 
     void initCleanup(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Cleanup.set((pFS, pFileContext, _pFileName, flags) -> {
-            String fileName = StringUtils.fromPointer(pFileContext);
             EnumSet<CleanupFlags> cleanupFlags = CleanupFlags.setOf(flags);
             winfsp.cleanup(
                     fs(pFS),
-                    fileName,
+                    ctx(pFileContext),
                     cleanupFlags
             );
         });
@@ -242,17 +240,25 @@ final class FSHelper {
 
     void initClose(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Close.set((pFS, pFileContext) -> {
-            String fileName = StringUtils.fromPointer(pFileContext);
-            winfsp.close(fs(pFS), fileName);
-            StringUtils.freeStringPointer(pFileContext);
+            Pointered<OpenContext> ctxP = OpenContext.of(pFileContext);
+
+            winfsp.close(fs(pFS), ctxP.get());
+
+            StringUtils.freeStringPointer(ctxP.get().path.get());  // avoid memory leak
+            ctxP.free();  // avoid memory leak
         });
     }
 
     void initRead(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Read.set((pFS, pFileContext, pBuffer, offset, length, pBytesTransferred) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileContext);
-                long bytesTransferred = winfsp.read(fs(pFS), fileName, pBuffer, offset, length);
+                long bytesTransferred = winfsp.read(
+                        fs(pFS),
+                        ctx(pFileContext).getPath(),
+                        pBuffer,
+                        offset,
+                        length
+                );
 
                 pBytesTransferred.putLong(0, bytesTransferred);
 
@@ -270,10 +276,9 @@ final class FSHelper {
         fsi.Write.set((pFS, pFileContext, pBuffer, offset, length, writeToEndOfFile, constrainedIo,
                        pBytesTransferred, pFileInfo) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileContext);
                 WriteResult res = winfsp.write(
                         fs(pFS),
-                        fileName,
+                        ctx(pFileContext).getPath(),
                         pBuffer,
                         offset,
                         length,
@@ -299,9 +304,11 @@ final class FSHelper {
     void initFlush(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Flush.set((pFS, pFileContext, pFileInfo) -> {
             try {
-                FSP_FILE_SYSTEM fs = fs(pFS);
-                String fileName = StringUtils.fromPointer(pFileContext);
-                FileInfo fi = winfsp.flush(fs, fileName);
+                String fileName = (pFileContext == null) ? null : ctx(pFileContext).getPath();
+                FileInfo fi = winfsp.flush(
+                        fs(pFS),
+                        fileName
+                );
 
                 if (fileName != null && fi != null) {
                     putFileInfo(pFileInfo, fi);
@@ -319,8 +326,7 @@ final class FSHelper {
     void initGetFileInfo(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.GetFileInfo.set((pFS, pFileContext, pFileInfo) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileContext);
-                FileInfo fi = winfsp.getFileInfo(fs(pFS), fileName);
+                FileInfo fi = winfsp.getFileInfo(fs(pFS), ctx(pFileContext));
 
                 putFileInfo(pFileInfo, fi);
 
@@ -337,10 +343,9 @@ final class FSHelper {
         fsi.SetBasicInfo.set((pFS, pFileContext, fileAttributes, creationTime, lastAccessTime, lastWriteTime, changeTime,
                               pFileInfo) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileContext);
                 FileInfo fi = winfsp.setBasicInfo(
                         fs(pFS),
-                        fileName,
+                        ctx(pFileContext),
                         FileAttributes.setOf(fileAttributes),
                         new WinSysTime(creationTime),
                         new WinSysTime(lastAccessTime),
@@ -362,8 +367,12 @@ final class FSHelper {
     void initSetFileSize(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.SetFileSize.set((pFS, pFileContext, newSize, setAllocationSize, pFileInfo) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileContext);
-                FileInfo res = winfsp.setFileSize(fs(pFS), fileName, newSize, bool(setAllocationSize));
+                FileInfo res = winfsp.setFileSize(
+                        fs(pFS),
+                        ctx(pFileContext).getPath(),
+                        newSize,
+                        bool(setAllocationSize)
+                );
 
                 putFileInfo(pFileInfo, res);
 
@@ -377,10 +386,9 @@ final class FSHelper {
     }
 
     void initCanDelete(FSP_FILE_SYSTEM_INTERFACE fsi) {
-        fsi.CanDelete.set((pFS, _pFileContext, pFileName) -> {
+        fsi.CanDelete.set((pFS, pFileContext, _pFileName) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileName);
-                winfsp.canDelete(fs(pFS), fileName);
+                winfsp.canDelete(fs(pFS), ctx(pFileContext));
 
                 return 0;
             } catch (NTStatusException e) {
@@ -392,11 +400,11 @@ final class FSHelper {
     }
 
     void initRename(FSP_FILE_SYSTEM_INTERFACE fsi) {
-        fsi.Rename.set((pFS, _pFileContext, pFileName, pNewFileName, replaceIfExists) -> {
+        fsi.Rename.set((pFS, pFileContext, _pFileName, pNewFileName, replaceIfExists) -> {
             try {
                 winfsp.rename(
                         fs(pFS),
-                        StringUtils.fromPointer(pFileName),
+                        ctx(pFileContext),
                         StringUtils.fromPointer(pNewFileName),
                         bool(replaceIfExists)
                 );
@@ -413,8 +421,7 @@ final class FSHelper {
     void initGetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.GetSecurity.set((pFS, pFileContext, pSecurityDescriptor, pSecurityDescriptorSize) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileContext);
-                byte[] securityDescriptor = winfsp.getSecurity(fs(pFS), fileName);
+                byte[] securityDescriptor = winfsp.getSecurity(fs(pFS), ctx(pFileContext));
 
                 SecurityDescriptorUtils.fromBytes(
                         RUNTIME,
@@ -435,8 +442,10 @@ final class FSHelper {
     void initSetSecurity(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.SetSecurity.set((pFS, pFileContext, securityInformation, pModificationDescriptor) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileContext);
-                byte[] securityDescriptor = winfsp.getSecurity(fs(pFS), fileName);
+                FSP_FILE_SYSTEM fs = fs(pFS);
+                OpenContext ctx = ctx(pFileContext);
+
+                byte[] securityDescriptor = winfsp.getSecurity(fs, ctx);
                 byte[] modifiedSecurityDescriptor = SecurityDescriptorUtils.modify(
                         RUNTIME,
                         securityDescriptor,
@@ -444,7 +453,7 @@ final class FSHelper {
                         pModificationDescriptor
                 );
 
-                winfsp.setSecurity(fs(pFS), fileName, modifiedSecurityDescriptor);
+                winfsp.setSecurity(fs, ctx, modifiedSecurityDescriptor);
 
                 return 0;
             } catch (NTStatusException e) {
@@ -469,7 +478,7 @@ final class FSHelper {
 
                 winfsp.readDirectory(
                         fs(pFS),
-                        StringUtils.fromPointer(pFileContext),
+                        ctx(pFileContext).getPath(),
                         pattern,
                         marker,
                         (fi) -> {
@@ -527,10 +536,9 @@ final class FSHelper {
     }
 
     void initGetReparsePoint(FSP_FILE_SYSTEM_INTERFACE fsi) {
-        fsi.GetReparsePoint.set((pFS, _pFileContext, pFileName, pBuffer, pSize) -> {
+        fsi.GetReparsePoint.set((pFS, pFileContext, _pFileName, pBuffer, pSize) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileName);
-                byte[] reparseData = winfsp.getReparsePointData(fs(pFS), fileName);
+                byte[] reparseData = winfsp.getReparsePointData(fs(pFS), ctx(pFileContext));
 
                 if (reparseData.length > pSize.getLong(0))
                     throw new NTStatusException(0xC0000023); // STATUS_BUFFER_TOO_SMALL
@@ -548,15 +556,15 @@ final class FSHelper {
     }
 
     void initSetReparsePoint(FSP_FILE_SYSTEM_INTERFACE fsi) {
-        fsi.SetReparsePoint.set((pFS, _pFileContext, pFileName, pBuffer, size) -> {
+        fsi.SetReparsePoint.set((pFS, pFileContext, _pFileName, pBuffer, size) -> {
             try {
                 FSP_FILE_SYSTEM fs = fs(pFS);
-                String fileName = StringUtils.fromPointer(pFileName);
-                ensureReparsePointCanBeReplaced(fs, fileName, pBuffer, size);
+                OpenContext ctx = ctx(pFileContext);
+                ensureReparsePointCanBeReplaced(fs, ctx, pBuffer, size);
 
                 byte[] replaceReparseData = PointerUtils.getBytes(pBuffer, 0, (int) size);
                 int reparseTag = pBuffer.getInt(0); /* the first field in a reparse buffer is the reparse tag */
-                winfsp.setReparsePoint(fs, fileName, replaceReparseData, reparseTag);
+                winfsp.setReparsePoint(fs, ctx, replaceReparseData, reparseTag);
 
                 return 0;
             } catch (NTStatusException e) {
@@ -568,13 +576,13 @@ final class FSHelper {
     }
 
     void initDeleteReparsePoint(FSP_FILE_SYSTEM_INTERFACE fsi) {
-        fsi.DeleteReparsePoint.set((pFS, _pFileContext, pFileName, pBuffer, size) -> {
+        fsi.DeleteReparsePoint.set((pFS, pFileContext, _pFileName, pBuffer, size) -> {
             try {
                 FSP_FILE_SYSTEM fs = fs(pFS);
-                String fileName = StringUtils.fromPointer(pFileName);
-                ensureReparsePointCanBeReplaced(fs, fileName, pBuffer, size);
+                OpenContext ctx = ctx(pFileContext);
+                ensureReparsePointCanBeReplaced(fs, ctx, pBuffer, size);
 
-                winfsp.deleteReparsePoint(fs, fileName);
+                winfsp.deleteReparsePoint(fs, ctx);
 
                 return 0;
             } catch (NTStatusException e) {
@@ -586,10 +594,15 @@ final class FSHelper {
     }
 
     private LibWinFsp.GetReparsePointByNameCallback newGetReparsePointByNameCallback() {
-        return ((pFS, _pContext, pFileName, _isDirectory, _pBuffer, _pSize) -> {
+        return ((pFS, _pContext, pFileName, isDirectory, _pBuffer, _pSize) -> {
             try {
-                String fileName = StringUtils.fromPointer(pFileName);
-                winfsp.getReparsePointData(fs(pFS), fileName);
+                Pointered<OpenContext> ctxP = OpenContext.create(RUNTIME);
+                ctxP.get().setPath(StringUtils.fromPointer(pFileName));
+                ctxP.get().setType(bool(isDirectory) ? OpenContext.Type.DIRECTORY : OpenContext.Type.FILE);
+
+                winfsp.getReparsePointData(fs(pFS), ctxP.get());
+
+                ctxP.free(); // avoid memory leak
 
                 return 0;
             } catch (NTStatusException e) {
@@ -599,11 +612,11 @@ final class FSHelper {
     }
 
     private void ensureReparsePointCanBeReplaced(FSP_FILE_SYSTEM fs,
-                                                 String fileName,
+                                                 OpenContext ctx,
                                                  Pointer /* VOID */ pReplaceReparseData,
                                                  @size_t long replaceReparseDataSize) throws NTStatusException {
 
-        byte[] data = winfsp.getReparsePointData(fs, fileName);
+        byte[] data = winfsp.getReparsePointData(fs, ctx);
         Pointer pCurrentReparseData = pointerFromBytes(data);
         int status = LibWinFsp.INSTANCE.FspFileSystemCanReplaceReparsePoint(
                 pCurrentReparseData,
@@ -620,10 +633,9 @@ final class FSHelper {
     void initGetDirInfoByName(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.GetDirInfoByName.set((pFS, pFileContext, pFileName, pDirInfo) -> {
             try {
-                String parentDirName = StringUtils.fromPointer(pFileContext);
                 FileInfo fi = winfsp.getDirInfoByName(
                         fs(pFS),
-                        parentDirName,
+                        ctx(pFileContext).getPath(),
                         StringUtils.fromPointer(pFileName)
                 );
 
@@ -648,6 +660,10 @@ final class FSHelper {
 
     private static FSP_FILE_SYSTEM fs(Pointer pFS) {
         return FSP_FILE_SYSTEM.of(pFS).get();
+    }
+
+    private static OpenContext ctx(Pointer pFileContext) {
+        return OpenContext.of(pFileContext).get();
     }
 
     private static boolean bool(byte val) {
@@ -688,9 +704,13 @@ final class FSHelper {
         fiOut.EaSize.set(fi.getEaSize());
     }
 
-    private static void putFileContext(Pointer ppFileContext, String fileName) {
-        Pointer p = StringUtils.toPointer(RUNTIME, fileName, true);
-        ppFileContext.putPointer(0, p);
+    private static void putFileContext(Pointer ppFileContext, FileInfo fi) {
+        boolean isDirectory = fi.getFileAttributes().contains(FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
+
+        Pointered<OpenContext> ctxP = OpenContext.create(RUNTIME);
+        ctxP.get().setPath(fi.getFileName());
+        ctxP.get().setType(isDirectory ? OpenContext.Type.DIRECTORY : OpenContext.Type.FILE);
+        ppFileContext.putPointer(0, ctxP.getPointer());
     }
 
     private static Pointer pointerFromBytes(byte[] bytes) {

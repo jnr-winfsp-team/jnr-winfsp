@@ -1,6 +1,5 @@
 package com.github.jnrwinfspteam.jnrwinfsp.api;
 
-import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM;
 import jnr.ffi.Pointer;
 
 import java.util.Optional;
@@ -10,32 +9,27 @@ import java.util.function.Predicate;
 public interface WinFspFS {
     /**
      * Get volume information.
-     *
-     * @param fileSystem The file system on which this request is posted.
      */
-    VolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) throws NTStatusException;
+    VolumeInfo getVolumeInfo() throws NTStatusException;
 
     /**
      * Set volume label.
      *
-     * @param fileSystem  The file system on which this request is posted.
      * @param volumeLabel The new label for the volume.
      */
-    VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) throws NTStatusException;
+    VolumeInfo setVolumeLabel(String volumeLabel) throws NTStatusException;
 
     /**
      * Get file or directory security descriptor string, and file attributes.
      * If the file or directory does not exist, then an empty optional must be returned.
      *
-     * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the file or directory to get the security descriptor and attributes for.
+     * @param fileName The name of the file or directory to get the security descriptor and attributes for.
      */
-    Optional<SecurityResult> getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    Optional<SecurityResult> getSecurityByName(String fileName) throws NTStatusException;
 
     /**
      * Create new file or directory.
      *
-     * @param fileSystem         The file system on which this request is posted.
      * @param fileName           The name of the file or directory to be created.
      * @param createOptions      Create options for this request. This parameter has the same meaning as the
      *                           CreateOptions parameter of the NtCreateFile API. User mode file systems should typically
@@ -54,8 +48,7 @@ public interface WinFspFS {
      * @param allocationSize     Allocation size for the newly created file.
      * @param reparsePoint       (optional) Reparse point
      */
-    FileInfo create(FSP_FILE_SYSTEM fileSystem,
-                    String fileName,
+    FileInfo create(String fileName,
                     Set<CreateOptions> createOptions,
                     int grantedAccess,
                     Set<FileAttributes> fileAttributes,
@@ -67,7 +60,6 @@ public interface WinFspFS {
     /**
      * Open a file or directory.
      *
-     * @param fileSystem    The file system on which this request is posted.
      * @param fileName      The name of the file or directory to be opened.
      * @param createOptions Create options for this request. This parameter has the same meaning as the
      *                      CreateOptions parameter of the NtCreateFile API. User mode file systems typically
@@ -80,21 +72,18 @@ public interface WinFspFS {
      *                      mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
      *                      which flags to use in its POSIX open() call.
      */
-    FileInfo open(FSP_FILE_SYSTEM fileSystem, String fileName, Set<CreateOptions> createOptions, int grantedAccess)
-            throws NTStatusException;
+    FileInfo open(String fileName, Set<CreateOptions> createOptions, int grantedAccess) throws NTStatusException;
 
     /**
      * Overwrite a file.
      *
-     * @param fileSystem            The file system on which this request is posted.
      * @param fileName              The name of the file being overwritten
      * @param fileAttributes        File attributes to apply to the overwritten file.
      * @param replaceFileAttributes When TRUE the existing file attributes should be replaced with the new ones.
      *                              When FALSE the existing file attributes should be merged (or'ed) with the new ones.
      * @param allocationSize        Allocation size for the overwritten file.
      */
-    FileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                       String fileName,
+    FileInfo overwrite(String fileName,
                        Set<FileAttributes> fileAttributes,
                        boolean replaceFileAttributes,
                        long allocationSize
@@ -145,40 +134,35 @@ public interface WinFspFS {
      * PostCleanupWhenModifiedOnly flag. In this case the FSD will only post Cleanup requests when
      * the file was modified/deleted.
      *
-     * @param fileSystem The file system on which this request is posted.
-     * @param ctx        The context of the file or directory to clean up.
-     * @param flags      These flags determine whether the file was modified and whether to delete the file.
+     * @param ctx   The context of the file or directory to clean up.
+     * @param flags These flags determine whether the file was modified and whether to delete the file.
      */
-    void cleanup(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, Set<CleanupFlags> flags);
+    void cleanup(OpenContext ctx, Set<CleanupFlags> flags);
 
     /**
      * Close a file.
      *
-     * @param fileSystem The file system on which this request is posted.
-     * @param ctx        The context of the file or directory to be closed.
+     * @param ctx The context of the file or directory to be closed.
      */
-    void close(FSP_FILE_SYSTEM fileSystem, OpenContext ctx);
+    void close(OpenContext ctx);
 
     /**
      * Read a file.
      * <p>
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      *
-     * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the file to be read.
-     * @param pBuffer    Pointer to a buffer that will receive the results of the read operation.
-     * @param offset     Offset within the file to read from.
-     * @param length     Length of data to read.
+     * @param fileName The name of the file to be read.
+     * @param pBuffer  Pointer to a buffer that will receive the results of the read operation.
+     * @param offset   Offset within the file to read from.
+     * @param length   Length of data to read.
      */
-    long read(FSP_FILE_SYSTEM fileSystem, String fileName, Pointer pBuffer, long offset, int length)
-            throws NTStatusException;
+    long read(String fileName, Pointer pBuffer, long offset, int length) throws NTStatusException;
 
     /**
      * Write a file.
      * <p>
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      *
-     * @param fileSystem       The file system on which this request is posted.
      * @param fileName         The name of the file to be written.
      * @param pBuffer          Pointer to a buffer that contains the data to write.
      * @param offset           Offset within the file to write to.
@@ -187,8 +171,7 @@ public interface WinFspFS {
      *                         parameter will contain the value -1.
      * @param constrainedIo    When TRUE the file system must not extend the file (i.e. change the file size).
      */
-    WriteResult write(FSP_FILE_SYSTEM fileSystem,
-                      String fileName,
+    WriteResult write(String fileName,
                       Pointer pBuffer,
                       long offset,
                       int length,
@@ -201,23 +184,20 @@ public interface WinFspFS {
      * <p>
      * Note that the FSD will also flush all file/volume caches prior to invoking this operation.
      *
-     * @param fileSystem The file system on which this request is posted.
-     * @param fileName   The name of the file to be flushed. When NULL the whole volume is being flushed.
+     * @param fileName The name of the file to be flushed. When NULL the whole volume is being flushed.
      */
-    FileInfo flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException;
+    FileInfo flush(String fileName) throws NTStatusException;
 
     /**
      * Get file or directory information.
      *
-     * @param fileSystem The file system on which this request is posted.
-     * @param ctx        The context of the file or directory to get information for.
+     * @param ctx The context of the file or directory to get information for.
      */
-    FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
+    FileInfo getFileInfo(OpenContext ctx) throws NTStatusException;
 
     /**
      * Set file or directory basic information.
      *
-     * @param fileSystem     The file system on which this request is posted.
      * @param ctx            The context of the file or directory to set information for.
      * @param fileAttributes File attributes to apply to the file or directory. If the value INVALID_FILE_ATTRIBUTES
      *                       is sent, the file attributes should not be changed.
@@ -230,8 +210,7 @@ public interface WinFspFS {
      * @param changeTime     Change time to apply to the file or directory. If the value 0 is sent, the change time
      *                       should not be changed.
      */
-    FileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
-                          OpenContext ctx,
+    FileInfo setBasicInfo(OpenContext ctx,
                           Set<FileAttributes> fileAttributes,
                           WinSysTime creationTime,
                           WinSysTime lastAccessTime,
@@ -259,13 +238,11 @@ public interface WinFspFS {
      * file size.</li>
      * </ul>
      *
-     * @param fileSystem        The file system on which this request is posted.
      * @param fileName          The name of the file to set the file/allocation size for.
      * @param newSize           New file/allocation size to apply to the file.
      * @param setAllocationSize If TRUE, then the allocation size is being set. if FALSE, then the file size is being set.
      */
-    FileInfo setFileSize(FSP_FILE_SYSTEM fileSystem, String fileName, long newSize, boolean setAllocationSize)
-            throws NTStatusException;
+    FileInfo setFileSize(String fileName, long newSize, boolean setAllocationSize) throws NTStatusException;
 
     /**
      * Determine whether a file or directory can be deleted.
@@ -283,10 +260,9 @@ public interface WinFspFS {
      * NOTE: If both CanDelete and SetDelete are defined, SetDelete takes precedence. However
      * most file systems need only implement the CanDelete operation.
      *
-     * @param fileSystem The file system on which this request is posted.
-     * @param ctx        The context of the file or directory to test for deletion.
+     * @param ctx The context of the file or directory to test for deletion.
      */
-    void canDelete(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
+    void canDelete(OpenContext ctx) throws NTStatusException;
 
     /**
      * Renames a file or directory.
@@ -298,88 +274,73 @@ public interface WinFspFS {
      * has open handles.</li>
      * </ul>
      *
-     * @param fileSystem      The file system on which this request is posted.
      * @param ctx             The context of the file or directory to rename.
      * @param newFileName     The new name for the file or directory.
      * @param replaceIfExists Whether to replace a file that already exists at NewFileName.
      */
-    void rename(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, String newFileName, boolean replaceIfExists)
-            throws NTStatusException;
+    void rename(OpenContext ctx, String newFileName, boolean replaceIfExists) throws NTStatusException;
 
     /**
      * Get file or directory security descriptor.
      *
-     * @param fileSystem The file system on which this request is posted.
-     * @param ctx        The context of the file or directory to get the security descriptor for.
+     * @param ctx The context of the file or directory to get the security descriptor for.
      */
-    byte[] getSecurity(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
+    byte[] getSecurity(OpenContext ctx) throws NTStatusException;
 
     /**
      * Set file or directory security descriptor string.
      *
-     * @param fileSystem         The file system on which this request is posted.
      * @param ctx                The context of the file or directory to set the security descriptor for.
      * @param securityDescriptor A security descriptor
      */
-    void setSecurity(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, byte[] securityDescriptor)
-            throws NTStatusException;
+    void setSecurity(OpenContext ctx, byte[] securityDescriptor) throws NTStatusException;
 
     /**
      * Reads a directory. Each directory entry is passed to the given consumer.
      * This method may be called multiple times for a given directory, each time with a different marker.
      *
-     * @param fileSystem The file system on which this request is posted.
-     * @param dirName    The name of the directory to be read.
-     * @param pattern    The pattern to match against files in this directory. Can be NULL. The file system
-     *                   can choose to ignore this parameter as the FSD will always perform its own pattern
-     *                   matching on the returned results.
-     * @param marker     A file name that marks where in the directory to start reading. Files with names
-     *                   that are greater than (not equal to) this marker (in the directory order determined
-     *                   by the file system) should be returned. Can be NULL.
-     * @param consumer   A consumer that accepts directory entries, one by one. Will return true while more
-     *                   entries can be added, and false when no more can be added due to lack of memory.
+     * @param dirName  The name of the directory to be read.
+     * @param pattern  The pattern to match against files in this directory. Can be NULL. The file system
+     *                 can choose to ignore this parameter as the FSD will always perform its own pattern
+     *                 matching on the returned results.
+     * @param marker   A file name that marks where in the directory to start reading. Files with names
+     *                 that are greater than (not equal to) this marker (in the directory order determined
+     *                 by the file system) should be returned. Can be NULL.
+     * @param consumer A consumer that accepts directory entries, one by one. Will return true while more
+     *                 entries can be added, and false when no more can be added due to lack of memory.
      */
-    void readDirectory(FSP_FILE_SYSTEM fileSystem,
-                       String dirName,
-                       String pattern,
-                       String marker,
-                       Predicate<FileInfo> consumer) throws NTStatusException;
+    void readDirectory(String dirName, String pattern, String marker, Predicate<FileInfo> consumer)
+            throws NTStatusException;
 
     /**
      * Get directory information for a single file or directory within a parent directory.
      *
-     * @param fileSystem    The file system on which this request is posted.
      * @param parentDirName The name of the parent directory.
      * @param fileName      The name of the file or directory to get information for. This name is relative
      *                      to the parent directory and is a single path component.
      */
-    FileInfo getDirInfoByName(FSP_FILE_SYSTEM fileSystem, String parentDirName, String fileName)
-            throws NTStatusException;
+    FileInfo getDirInfoByName(String parentDirName, String fileName) throws NTStatusException;
 
     /**
      * Get reparse point data.
      *
-     * @param fileSystem The file system on which this request is posted
-     * @param ctx        The context of the file or directory to be read.
+     * @param ctx The context of the file or directory to be read.
      */
-    byte[] getReparsePointData(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
+    byte[] getReparsePointData(OpenContext ctx) throws NTStatusException;
 
     /**
      * Sets a reparse point.
      *
-     * @param fileSystem  The file system on which this request is posted
      * @param ctx         The context of the file or directory to be read
      * @param reparseData The reparse point data
      * @param reparseTag  The reparse point tag
      */
-    void setReparsePoint(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, byte[] reparseData, int reparseTag)
-            throws NTStatusException;
+    void setReparsePoint(OpenContext ctx, byte[] reparseData, int reparseTag) throws NTStatusException;
 
     /**
      * Deletes a reparse point.
      *
-     * @param fileSystem The file system on which this request is posted
-     * @param ctx        The context of the file or directory to be read
+     * @param ctx The context of the file or directory to be read
      */
-    void deleteReparsePoint(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException;
+    void deleteReparsePoint(OpenContext ctx) throws NTStatusException;
 }

@@ -2,7 +2,6 @@ package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
 import com.github.jnrwinfspteam.jnrwinfsp.WinFspStubFS;
 import com.github.jnrwinfspteam.jnrwinfsp.api.*;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM;
 import com.github.jnrwinfspteam.jnrwinfsp.service.ServiceException;
 import com.github.jnrwinfspteam.jnrwinfsp.service.ServiceRunner;
 import com.github.jnrwinfspteam.jnrwinfsp.util.NaturalOrderComparator;
@@ -69,7 +68,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public VolumeInfo getVolumeInfo(FSP_FILE_SYSTEM fileSystem) {
+    public VolumeInfo getVolumeInfo() {
 
         verboseOut.println("== GET VOLUME INFO ==");
         synchronized (objects) {
@@ -78,7 +77,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public VolumeInfo setVolumeLabel(FSP_FILE_SYSTEM fileSystem, String volumeLabel) {
+    public VolumeInfo setVolumeLabel(String volumeLabel) {
 
         verboseOut.printf("== SET VOLUME LABEL == %s%n", volumeLabel);
         synchronized (objects) {
@@ -88,7 +87,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public Optional<SecurityResult> getSecurityByName(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public Optional<SecurityResult> getSecurityByName(String fileName) throws NTStatusException {
         verboseOut.printf("== GET SECURITY BY NAME == %s%n", fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
@@ -106,8 +105,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public FileInfo create(FSP_FILE_SYSTEM fileSystem,
-                           String fileName,
+    public FileInfo create(String fileName,
                            Set<CreateOptions> createOptions,
                            int grantedAccess,
                            Set<FileAttributes> fileAttributes,
@@ -155,8 +153,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public FileInfo open(FSP_FILE_SYSTEM fileSystem,
-                         String fileName,
+    public FileInfo open(String fileName,
                          Set<CreateOptions> createOptions,
                          int grantedAccess) throws NTStatusException {
 
@@ -173,8 +170,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public FileInfo overwrite(FSP_FILE_SYSTEM fileSystem,
-                              String fileName,
+    public FileInfo overwrite(String fileName,
                               Set<FileAttributes> fileAttributes,
                               boolean replaceFileAttributes,
                               long allocationSize) throws NTStatusException {
@@ -207,7 +203,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void cleanup(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, Set<CleanupFlags> flags) {
+    public void cleanup(OpenContext ctx, Set<CleanupFlags> flags) {
 
         verboseOut.printf("== CLEANUP == %s cf=%s%n", ctx, flags);
         try {
@@ -247,12 +243,12 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void close(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) {
+    public void close(OpenContext ctx) {
         verboseOut.printf("== CLOSE == %s%n", ctx);
     }
 
     @Override
-    public long read(FSP_FILE_SYSTEM fileSystem, String fileName, Pointer pBuffer, long offset, int length)
+    public long read(String fileName, Pointer pBuffer, long offset, int length)
             throws NTStatusException {
 
         verboseOut.printf("== READ == %s off=%d len=%d%n", fileName, offset, length);
@@ -268,8 +264,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public WriteResult write(FSP_FILE_SYSTEM fileSystem,
-                             String fileName,
+    public WriteResult write(String fileName,
                              Pointer pBuffer,
                              long offset,
                              int length,
@@ -297,7 +292,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public FileInfo flush(FSP_FILE_SYSTEM fileSystem, String fileName) throws NTStatusException {
+    public FileInfo flush(String fileName) throws NTStatusException {
         verboseOut.printf("== FLUSH == %s%n", fileName);
         synchronized (objects) {
             if (fileName == null)
@@ -314,7 +309,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public FileInfo getFileInfo(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
+    public FileInfo getFileInfo(OpenContext ctx) throws NTStatusException {
 
         verboseOut.printf("== GET FILE INFO == %s%n", ctx);
         synchronized (objects) {
@@ -329,8 +324,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public FileInfo setBasicInfo(FSP_FILE_SYSTEM fileSystem,
-                                 OpenContext ctx,
+    public FileInfo setBasicInfo(OpenContext ctx,
                                  Set<FileAttributes> fileAttributes,
                                  WinSysTime creationTime,
                                  WinSysTime lastAccessTime,
@@ -365,7 +359,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public FileInfo setFileSize(FSP_FILE_SYSTEM fileSystem, String fileName, long newSize, boolean setAllocationSize)
+    public FileInfo setFileSize(String fileName, long newSize, boolean setAllocationSize)
             throws NTStatusException {
 
         verboseOut.printf("== SET FILE SIZE == %s size=%d setAlloc=%s%n", fileName, newSize, setAllocationSize);
@@ -386,7 +380,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void canDelete(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
+    public void canDelete(OpenContext ctx) throws NTStatusException {
 
         verboseOut.printf("== CAN DELETE == %s%n", ctx);
         synchronized (objects) {
@@ -401,7 +395,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void rename(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, String newFileName, boolean replaceIfExists)
+    public void rename(OpenContext ctx, String newFileName, boolean replaceIfExists)
             throws NTStatusException {
 
         verboseOut.printf("== RENAME == %s -> %s%n", ctx, newFileName);
@@ -435,7 +429,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public byte[] getSecurity(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
+    public byte[] getSecurity(OpenContext ctx) throws NTStatusException {
 
         verboseOut.printf("== GET SECURITY == %s%n", ctx);
         synchronized (objects) {
@@ -450,7 +444,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void setSecurity(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, byte[] securityDescriptor)
+    public void setSecurity(OpenContext ctx, byte[] securityDescriptor)
             throws NTStatusException {
 
         verboseOut.printf("== SET SECURITY == %s sd=%s%n", ctx, securityDescriptorToString(securityDescriptor));
@@ -464,8 +458,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void readDirectory(FSP_FILE_SYSTEM fileSystem,
-                              String fileName,
+    public void readDirectory(String fileName,
                               String pattern,
                               String marker,
                               Predicate<FileInfo> consumer) throws NTStatusException {
@@ -506,7 +499,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public FileInfo getDirInfoByName(FSP_FILE_SYSTEM fileSystem, String parentDirName, String fileName)
+    public FileInfo getDirInfoByName(String parentDirName, String fileName)
             throws NTStatusException {
 
         verboseOut.printf("== GET DIR INFO BY NAME == %s / %s%n", parentDirName, fileName);
@@ -525,7 +518,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public byte[] getReparsePointData(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
+    public byte[] getReparsePointData(OpenContext ctx) throws NTStatusException {
         verboseOut.printf("== GET REPARSE POINT DATA == %s%n", ctx);
         synchronized (objects) {
             Path filePath = getPath(ctx.getPath());
@@ -542,7 +535,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void setReparsePoint(FSP_FILE_SYSTEM fileSystem, OpenContext ctx, byte[] reparseData, int reparseTag) throws NTStatusException {
+    public void setReparsePoint(OpenContext ctx, byte[] reparseData, int reparseTag) throws NTStatusException {
         verboseOut.printf("== SET REPARSE POINT == %s rd=%s rt=%d%n",
                 ctx, Arrays.toString(reparseData), reparseTag
         );
@@ -560,7 +553,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void deleteReparsePoint(FSP_FILE_SYSTEM fileSystem, OpenContext ctx) throws NTStatusException {
+    public void deleteReparsePoint(OpenContext ctx) throws NTStatusException {
         verboseOut.printf("== DELETE REPARSE POINT == %s%n", ctx);
         synchronized (objects) {
             Path filePath = getPath(ctx.getPath());

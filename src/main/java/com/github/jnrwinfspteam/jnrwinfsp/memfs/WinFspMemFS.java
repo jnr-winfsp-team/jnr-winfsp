@@ -57,7 +57,7 @@ public class WinFspMemFS extends WinFspStubFS {
         this.objects.put(rootPath.toString(), new DirObj(
                 null,
                 rootPath,
-                securityDescriptorToBytes(ROOT_SECURITY_DESCRIPTOR),
+                SecurityDescriptorHandler.securityDescriptorToBytes(ROOT_SECURITY_DESCRIPTOR),
                 null
         ));
 
@@ -98,7 +98,7 @@ public class WinFspMemFS extends WinFspStubFS {
             byte[] securityDescriptor = obj.getSecurityDescriptor();
             FileInfo info = obj.generateFileInfo();
             verboseOut.printf("== GET SECURITY BY NAME RETURNED == %s %s%n",
-                    securityDescriptorToString(securityDescriptor), info);
+                    SecurityDescriptorHandler.securityDescriptorToString(securityDescriptor), info);
 
             return Optional.of(new SecurityResult(securityDescriptor, EnumSet.copyOf(obj.getFileAttributes())));
         }
@@ -115,7 +115,7 @@ public class WinFspMemFS extends WinFspStubFS {
 
         verboseOut.printf("== CREATE == %s co=%s ga=%X fa=%s sd=%s as=%d rp=%s%n",
                 fileName, createOptions, grantedAccess, fileAttributes,
-                securityDescriptorToString(securityDescriptor), allocationSize, reparsePoint
+                SecurityDescriptorHandler.securityDescriptorToString(securityDescriptor), allocationSize, reparsePoint
         );
         synchronized (objects) {
             Path filePath = getPath(fileName);
@@ -437,7 +437,10 @@ public class WinFspMemFS extends WinFspStubFS {
             MemoryObj memObj = getObject(filePath);
 
             byte[] securityDescriptor = memObj.getSecurityDescriptor();
-            verboseOut.printf("== GET SECURITY RETURNED == %s%n", securityDescriptorToString(securityDescriptor));
+            verboseOut.printf(
+                    "== GET SECURITY RETURNED == %s%n",
+                    SecurityDescriptorHandler.securityDescriptorToString(securityDescriptor)
+            );
 
             return securityDescriptor;
         }
@@ -447,7 +450,11 @@ public class WinFspMemFS extends WinFspStubFS {
     public void setSecurity(OpenContext ctx, byte[] securityDescriptor)
             throws NTStatusException {
 
-        verboseOut.printf("== SET SECURITY == %s sd=%s%n", ctx, securityDescriptorToString(securityDescriptor));
+        verboseOut.printf(
+                "== SET SECURITY == %s sd=%s%n",
+                ctx,
+                SecurityDescriptorHandler.securityDescriptorToString(securityDescriptor)
+        );
         synchronized (objects) {
             Path filePath = getPath(ctx.getPath());
             MemoryObj memObj = getObject(filePath);

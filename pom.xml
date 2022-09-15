@@ -4,7 +4,7 @@
 
     <groupId>com.github.jnr-winfsp-team</groupId>
     <artifactId>jnr-winfsp</artifactId>
-    <version>0.16.0</version>
+    <version>0.17.0</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>

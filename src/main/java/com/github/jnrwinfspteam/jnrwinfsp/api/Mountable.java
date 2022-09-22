@@ -23,4 +23,9 @@ public interface Mountable {
      * mounted drive.
      */
     void unmountLocalDrive();
+
+    /**
+     * Returns the actual mount point, or null if not mounted.
+     */
+    String getMountPoint();
 }

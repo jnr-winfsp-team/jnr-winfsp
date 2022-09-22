@@ -4,6 +4,7 @@ import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.FSP;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibKernel32;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibWinFsp;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FILE_SYSTEM_INTERFACE;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.FSP_FSCTL_VOLUME_PARAMS.FSAttr;
@@ -116,6 +117,16 @@ public abstract class AbstractWinFspFS implements Mountable, WinFspFS {
             freeStructs();
 
             mounted = false;
+        }
+    }
+
+    @Override
+    public String getMountPoint() {
+        synchronized (mountLock) {
+            if (!mounted)
+                return null;
+
+            return StringUtils.fromPointer(FSP_FILE_SYSTEM.of(pFileSystem).get().MountPoint.get());
         }
     }
 

@@ -4,7 +4,7 @@ A Java binding for WinFsp using Java Native Runtime (JNR)
 
 This is inspired by jnr-fuse and winfspy.
 
-You will need to install WinFsp ( http://www.secfs.net/winfsp/rel/ ) in order to work with this library.
+You will need to install WinFsp ( https://winfsp.dev/rel/ ) in order to work with this library.
 
 ## Build
 

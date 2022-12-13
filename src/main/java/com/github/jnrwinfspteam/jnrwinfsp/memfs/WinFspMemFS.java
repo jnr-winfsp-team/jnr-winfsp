@@ -395,12 +395,11 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     @Override
-    public void rename(OpenContext ctx, String newFileName, boolean replaceIfExists)
+    public void rename(OpenContext ctx, String oldFileName, String newFileName, boolean replaceIfExists)
             throws NTStatusException {
 
-        verboseOut.printf("== RENAME == %s -> %s%n", ctx, newFileName);
+        verboseOut.printf("== RENAME == %s -> %s%n", oldFileName, newFileName);
         synchronized (objects) {
-            String oldFileName = ctx.getPath();
             Path oldFilePath = getPath(oldFileName);
             Path newFilePath = getPath(newFileName);
 

@@ -389,10 +389,11 @@ final class FSHelper {
     }
 
     void initRename(FSP_FILE_SYSTEM_INTERFACE fsi) {
-        fsi.Rename.set((pFS, pFileContext, _pFileName, pNewFileName, replaceIfExists) -> {
+        fsi.Rename.set((pFS, pFileContext, pFileName, pNewFileName, replaceIfExists) -> {
             try {
                 winfsp.rename(
                         ctx(pFileContext),
+                        StringUtils.fromPointer(pFileName),
                         StringUtils.fromPointer(pNewFileName),
                         bool(replaceIfExists)
                 );

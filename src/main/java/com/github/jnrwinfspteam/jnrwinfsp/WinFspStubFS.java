@@ -140,6 +140,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @NotImplemented
     public void rename(
             OpenContext ctx,
+            String oldFileName,
             String newFileName,
             boolean replaceIfExists) throws NTStatusException {
 

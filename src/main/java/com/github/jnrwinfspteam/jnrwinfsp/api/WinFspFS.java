@@ -278,7 +278,7 @@ public interface WinFspFS {
      * @param newFileName     The new name for the file or directory.
      * @param replaceIfExists Whether to replace a file that already exists at NewFileName.
      */
-    void rename(OpenContext ctx, String newFileName, boolean replaceIfExists) throws NTStatusException;
+    void rename(OpenContext ctx, String oldFileName, String newFileName, boolean replaceIfExists) throws NTStatusException;
 
     /**
      * Get file or directory security descriptor.

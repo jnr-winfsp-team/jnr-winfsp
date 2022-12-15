@@ -1,8 +1,6 @@
 package com.github.jnrwinfspteam.jnrwinfsp.api;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 public class WinSysTime {
 

@@ -1,7 +1,7 @@
 package com.github.jnrwinfspteam.jnrwinfsp.internal.struct;
 
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
+import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
 import jnr.ffi.Runtime;
 import jnr.ffi.Struct;
 

@@ -1,7 +1,5 @@
 package com.github.jnrwinfspteam.jnrwinfsp.api;
 
-import com.github.jnrwinfspteam.jnrwinfsp.api.FileAttributes;
-
 import java.util.Objects;
 import java.util.Set;
 

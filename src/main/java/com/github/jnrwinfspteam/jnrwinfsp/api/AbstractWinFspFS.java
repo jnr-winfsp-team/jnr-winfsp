@@ -1,6 +1,5 @@
-package com.github.jnrwinfspteam.jnrwinfsp;
+package com.github.jnrwinfspteam.jnrwinfsp.api;
 
-import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.FSP;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibKernel32;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibWinFsp;

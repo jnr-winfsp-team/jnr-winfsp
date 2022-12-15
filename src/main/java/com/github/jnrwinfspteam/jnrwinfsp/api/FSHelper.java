@@ -1,6 +1,5 @@
-package com.github.jnrwinfspteam.jnrwinfsp;
+package com.github.jnrwinfspteam.jnrwinfsp.api;
 
-import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibAdvapi32;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.lib.LibWinFsp;
 import com.github.jnrwinfspteam.jnrwinfsp.internal.struct.*;

@@ -19,7 +19,7 @@
  */
 package com.github.jnrwinfspteam.jnrwinfsp.util;
 
-import java.util.*;
+import java.util.Comparator;
 
 public class NaturalOrderComparator implements Comparator<String> {
     int compareRight(String a, String b) {

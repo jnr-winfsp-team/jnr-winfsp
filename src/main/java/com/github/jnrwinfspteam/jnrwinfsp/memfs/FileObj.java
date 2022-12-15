@@ -1,7 +1,7 @@
 package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
-import com.github.jnrwinfspteam.jnrwinfsp.api.NTStatusException;
 import com.github.jnrwinfspteam.jnrwinfsp.api.FileAttributes;
+import com.github.jnrwinfspteam.jnrwinfsp.api.NTStatusException;
 import com.github.jnrwinfspteam.jnrwinfsp.api.ReparsePoint;
 import com.github.jnrwinfspteam.jnrwinfsp.api.WinSysTime;
 import jnr.ffi.Pointer;

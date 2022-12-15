@@ -1,6 +1,5 @@
 package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 
-import com.github.jnrwinfspteam.jnrwinfsp.WinFspStubFS;
 import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.service.ServiceException;
 import com.github.jnrwinfspteam.jnrwinfsp.service.ServiceRunner;

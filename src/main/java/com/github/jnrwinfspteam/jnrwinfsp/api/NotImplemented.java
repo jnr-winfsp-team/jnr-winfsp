@@ -1,4 +1,4 @@
-package com.github.jnrwinfspteam.jnrwinfsp;
+package com.github.jnrwinfspteam.jnrwinfsp.api;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -9,7 +9,7 @@ import static java.lang.annotation.ElementType.METHOD;
 
 /**
  * If a method is marked with this annotation then it won't be registered in FSP_FILE_SYSTEM_INTERFACE.
- * All methods in {@link com.github.jnrwinfspteam.jnrwinfsp.WinFspStubFS} are marked with this annotation.
+ * All methods in {@link WinFspStubFS} are marked with this annotation.
  * <p>
  * This annotation is not inheritable, so when extending the WinFspStubFS class, all overridden methods will be
  * registered in FSP_FILE_SYSTEM_INTERFACE.

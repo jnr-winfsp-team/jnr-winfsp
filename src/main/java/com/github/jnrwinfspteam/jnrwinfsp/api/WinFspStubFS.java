@@ -1,6 +1,5 @@
-package com.github.jnrwinfspteam.jnrwinfsp;
+package com.github.jnrwinfspteam.jnrwinfsp.api;
 
-import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import jnr.ffi.Pointer;
 
 import java.util.Optional;

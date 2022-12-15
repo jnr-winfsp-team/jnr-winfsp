@@ -1,67 +1,56 @@
 package com.github.jnrwinfspteam.jnrwinfsp.api;
 
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.Pointered;
-import com.github.jnrwinfspteam.jnrwinfsp.internal.util.StringUtils;
-import jnr.ffi.Runtime;
-import jnr.ffi.Struct;
+import java.util.Objects;
 
-public class OpenContext extends Struct {
+public final class OpenContext {
 
     public enum Type {
         FILE,
         DIRECTORY
     }
 
-    public final Struct.Pointer path = new Pointer();
-    public final Struct.Enum8<Type> type = new Enum8<>(Type.class);
-
-    public static Pointered<OpenContext> of(jnr.ffi.Pointer pointer) {
-        return Pointered.wrap(new OpenContext(Runtime.getSystemRuntime()), pointer);
+    static OpenContext newFileContext(String path) {
+        return new OpenContext(path, Type.FILE);
     }
 
-    public static Pointered<OpenContext> create(Runtime runtime) {
-        var ctx = new OpenContext(runtime);
-
-        // allocate the necessary memory for the struct
-        Pointered<OpenContext> ctxP = Pointered.allocate(ctx);
-
-        // initialise every member to zero
-        ctx.path.set(0L);
-        ctx.type.set(0);
-
-        return ctxP;
+    static OpenContext newDirectoryContext(String path) {
+        return new OpenContext(path, Type.DIRECTORY);
     }
 
-    private OpenContext(Runtime runtime) {
-        super(runtime);
+    private volatile String path;
+    private volatile Type type;
+
+    private OpenContext(String path, Type type) {
+        this.path = Objects.requireNonNull(path);
+        this.type = Objects.requireNonNull(type);
     }
 
-    public void setPath(java.lang.String path) {
-        this.path.set(StringUtils.toPointer(this.getRuntime(), path, true));
-    }
-
-    public void setType(Type type) {
-        this.type.set(type);
-    }
-
-    public java.lang.String getPath() {
-        return StringUtils.fromPointer(this.path.get());
+    public String getPath() {
+        return path;
     }
 
     public Type getType() {
-        return this.type.get();
+        return type;
     }
 
     public boolean isFile() {
-        return Type.FILE.equals(getType());
+        return Type.FILE.equals(type);
     }
 
     public boolean isDirectory() {
-        return Type.DIRECTORY.equals(getType());
+        return Type.DIRECTORY.equals(type);
+    }
+
+    public void setPath(String path) {
+        this.path = Objects.requireNonNull(path);
+    }
+
+    public void setType(Type type) {
+        this.type = Objects.requireNonNull(type);
     }
 
     @Override
-    public java.lang.String toString() {
-        return java.lang.String.format("(%s) %s", getType(), getPath());
+    public String toString() {
+        return java.lang.String.format("(%s) %s", type, path);
     }
 }

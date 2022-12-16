@@ -400,12 +400,17 @@ final class FSHelper {
     void initRename(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Rename.set((pFS, pFileContext, pFileName, pNewFileName, replaceIfExists) -> {
             try {
+                OpenContext ctx = ctxValue(pFileContext);
+                String newFileName = StringUtils.fromPointer(pNewFileName);
+
                 winfsp.rename(
-                        ctxValue(pFileContext),
+                        ctx,
                         StringUtils.fromPointer(pFileName),
-                        StringUtils.fromPointer(pNewFileName),
+                        newFileName,
                         bool(replaceIfExists)
                 );
+
+                ctx.setPath(newFileName);
 
                 return 0;
             } catch (NTStatusException e) {

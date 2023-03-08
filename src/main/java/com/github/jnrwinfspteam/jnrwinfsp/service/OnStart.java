@@ -9,5 +9,5 @@ public interface OnStart {
      *
      * @return STATUS_SUCCESS or error status
      */
-    int onStart(String[] args);
+    int onStart(String[] args, ServiceControl control);
 }

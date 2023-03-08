@@ -9,5 +9,5 @@ public interface OnStop {
      *
      * @return STATUS_SUCCESS or error status
      */
-    int onStop();
+    int onStop(ServiceControl control);
 }

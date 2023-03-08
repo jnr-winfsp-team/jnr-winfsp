@@ -406,4 +406,15 @@ public interface LibWinFsp {
                               int eventType,
                               Pointer /* VOID */ pEventData);
     }
+
+    /**
+     * Request additional time from the Service Control Manager.
+     * <p>
+     * This API should be used during Start and Stop operations only.
+     *
+     * @param pService The service object
+     * @param time     Additional time (in milliseconds).
+     */
+    void FspServiceRequestTime(Pointer /* FSP_SERVICE */ pService,
+                               @u_int32_t int time);
 }

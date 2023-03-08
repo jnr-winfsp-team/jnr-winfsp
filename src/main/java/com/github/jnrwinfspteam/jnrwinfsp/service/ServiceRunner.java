@@ -33,9 +33,9 @@ public final class ServiceRunner {
                             .map(StringUtils::fromPointer)
                             .toArray(String[]::new);
 
-                    return onStart.onStart(args);
+                    return onStart.onStart(args, new ServiceControl(pService));
                 },
-                (pService) -> onStop.onStop(),
+                (pService) -> onStop.onStop(new ServiceControl(pService)),
                 null,
                 null
         );
@@ -59,7 +59,7 @@ public final class ServiceRunner {
 
         runAsService(
                 serviceName,
-                (args) -> {
+                (args, control) -> {
                     try {
                         mountable.mountLocalDrive(mountPoint, options);
                         return 0;
@@ -67,7 +67,7 @@ public final class ServiceRunner {
                         return e.getNtStatus();
                     }
                 },
-                () -> {
+                (control) -> {
                     mountable.unmountLocalDrive();
                     return 0;
                 }

@@ -48,13 +48,13 @@ public interface WinFspFS {
      * @param allocationSize     Allocation size for the newly created file.
      * @param reparsePoint       (optional) Reparse point
      */
-    FileInfo create(String fileName,
-                    Set<CreateOptions> createOptions,
-                    int grantedAccess,
-                    Set<FileAttributes> fileAttributes,
-                    byte[] securityDescriptor,
-                    long allocationSize,
-                    ReparsePoint reparsePoint
+    OpenResult create(String fileName,
+                      Set<CreateOptions> createOptions,
+                      int grantedAccess,
+                      Set<FileAttributes> fileAttributes,
+                      byte[] securityDescriptor,
+                      long allocationSize,
+                      ReparsePoint reparsePoint
     ) throws NTStatusException;
 
     /**
@@ -72,18 +72,18 @@ public interface WinFspFS {
      *                      mode file system; for example the WinFsp-FUSE layer uses this parameter to determine
      *                      which flags to use in its POSIX open() call.
      */
-    FileInfo open(String fileName, Set<CreateOptions> createOptions, int grantedAccess) throws NTStatusException;
+    OpenResult open(String fileName, Set<CreateOptions> createOptions, int grantedAccess) throws NTStatusException;
 
     /**
      * Overwrite a file.
      *
-     * @param fileName              The name of the file being overwritten
+     * @param ctx                   The context of the file being overwritten
      * @param fileAttributes        File attributes to apply to the overwritten file.
      * @param replaceFileAttributes When TRUE the existing file attributes should be replaced with the new ones.
      *                              When FALSE the existing file attributes should be merged (or'ed) with the new ones.
      * @param allocationSize        Allocation size for the overwritten file.
      */
-    FileInfo overwrite(String fileName,
+    FileInfo overwrite(OpenContext ctx,
                        Set<FileAttributes> fileAttributes,
                        boolean replaceFileAttributes,
                        long allocationSize
@@ -151,19 +151,19 @@ public interface WinFspFS {
      * <p>
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      *
-     * @param fileName The name of the file to be read.
+     * @param ctx      The context of the file to be read.
      * @param pBuffer  Pointer to a buffer that will receive the results of the read operation.
      * @param offset   Offset within the file to read from.
      * @param length   Length of data to read.
      */
-    long read(String fileName, Pointer pBuffer, long offset, int length) throws NTStatusException;
+    long read(OpenContext ctx, Pointer pBuffer, long offset, int length) throws NTStatusException;
 
     /**
      * Write a file.
      * <p>
      * NOTE: STATUS_PENDING is supported allowing for asynchronous operation.
      *
-     * @param fileName         The name of the file to be written.
+     * @param ctx              The context of the file to be written.
      * @param pBuffer          Pointer to a buffer that contains the data to write.
      * @param offset           Offset within the file to write to.
      * @param length           Length of data to write.
@@ -171,7 +171,7 @@ public interface WinFspFS {
      *                         parameter will contain the value -1.
      * @param constrainedIo    When TRUE the file system must not extend the file (i.e. change the file size).
      */
-    WriteResult write(String fileName,
+    WriteResult write(OpenContext ctx,
                       Pointer pBuffer,
                       long offset,
                       int length,
@@ -184,9 +184,9 @@ public interface WinFspFS {
      * <p>
      * Note that the FSD will also flush all file/volume caches prior to invoking this operation.
      *
-     * @param fileName The name of the file to be flushed. When NULL the whole volume is being flushed.
+     * @param ctx The context of the file to be flushed. When NULL the whole volume is being flushed.
      */
-    FileInfo flush(String fileName) throws NTStatusException;
+    FileInfo flush(OpenContext ctx) throws NTStatusException;
 
     /**
      * Get file or directory information.
@@ -238,11 +238,11 @@ public interface WinFspFS {
      * file size.</li>
      * </ul>
      *
-     * @param fileName          The name of the file to set the file/allocation size for.
+     * @param ctx               The context of the file to set the file/allocation size for.
      * @param newSize           New file/allocation size to apply to the file.
      * @param setAllocationSize If TRUE, then the allocation size is being set. if FALSE, then the file size is being set.
      */
-    FileInfo setFileSize(String fileName, long newSize, boolean setAllocationSize) throws NTStatusException;
+    FileInfo setFileSize(OpenContext ctx, long newSize, boolean setAllocationSize) throws NTStatusException;
 
     /**
      * Determine whether a file or directory can be deleted.
@@ -299,7 +299,7 @@ public interface WinFspFS {
      * Reads a directory. Each directory entry is passed to the given consumer.
      * This method may be called multiple times for a given directory, each time with a different marker.
      *
-     * @param dirName  The name of the directory to be read.
+     * @param ctx      The context of the directory to be read.
      * @param pattern  The pattern to match against files in this directory. Can be NULL. The file system
      *                 can choose to ignore this parameter as the FSD will always perform its own pattern
      *                 matching on the returned results.
@@ -309,17 +309,17 @@ public interface WinFspFS {
      * @param consumer A consumer that accepts directory entries, one by one. Will return true while more
      *                 entries can be added, and false when no more can be added due to lack of memory.
      */
-    void readDirectory(String dirName, String pattern, String marker, Predicate<FileInfo> consumer)
+    void readDirectory(OpenContext ctx, String pattern, String marker, Predicate<FileInfo> consumer)
             throws NTStatusException;
 
     /**
      * Get directory information for a single file or directory within a parent directory.
      *
-     * @param parentDirName The name of the parent directory.
+     * @param parentDirCtx  The context of the parent directory.
      * @param fileName      The name of the file or directory to get information for. This name is relative
      *                      to the parent directory and is a single path component.
      */
-    FileInfo getDirInfoByName(String parentDirName, String fileName) throws NTStatusException;
+    FileInfo getDirInfoByName(OpenContext parentDirCtx, String fileName) throws NTStatusException;
 
     /**
      * Get reparse point data.

@@ -9,20 +9,26 @@ public final class OpenContext {
         DIRECTORY
     }
 
-    static OpenContext newFileContext(String path) {
-        return new OpenContext(path, Type.FILE);
+    static OpenContext newFileContext(long fileHandle, String path) {
+        return new OpenContext(fileHandle, path, Type.FILE);
     }
 
-    static OpenContext newDirectoryContext(String path) {
-        return new OpenContext(path, Type.DIRECTORY);
+    static OpenContext newDirectoryContext(long fileHandle, String path) {
+        return new OpenContext(fileHandle, path, Type.DIRECTORY);
     }
 
+    private final long fileHandle;
     private volatile String path;
     private volatile Type type;
 
-    private OpenContext(String path, Type type) {
+    private OpenContext(long fileHandle, String path, Type type) {
+        this.fileHandle = fileHandle;
         this.path = Objects.requireNonNull(path);
         this.type = Objects.requireNonNull(type);
+    }
+
+    public long getFileHandle() {
+        return fileHandle;
     }
 
     public String getPath() {
@@ -51,6 +57,6 @@ public final class OpenContext {
 
     @Override
     public String toString() {
-        return java.lang.String.format("(%s) %s", type, path);
+        return String.format("%d - (%s) %s", fileHandle, type, path);
     }
 }

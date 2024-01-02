@@ -32,7 +32,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public FileInfo create(
+    public OpenResult create(
             String fileName,
             Set<CreateOptions> createOptions,
             int grantedAccess,
@@ -45,7 +45,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public FileInfo open(
+    public OpenResult open(
             String fileName,
             Set<CreateOptions> createOptions,
             int grantedAccess) throws NTStatusException {
@@ -55,7 +55,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public FileInfo overwrite(
-            String fileName,
+            OpenContext ctx,
             Set<FileAttributes> fileAttributes,
             boolean replaceFileAttributes,
             long allocationSize) throws NTStatusException {
@@ -77,7 +77,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public long read(
-            String fileName,
+            OpenContext ctx,
             Pointer pBuffer,
             long offset,
             int length) throws NTStatusException {
@@ -87,7 +87,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public WriteResult write(
-            String fileName,
+            OpenContext ctx,
             Pointer pBuffer,
             long offset,
             int length,
@@ -98,7 +98,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public FileInfo flush(String fileName) throws NTStatusException {
+    public FileInfo flush(OpenContext ctx) throws NTStatusException {
         return null;
     }
 
@@ -123,7 +123,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public FileInfo setFileSize(
-            String fileName,
+            OpenContext ctx,
             long newSize,
             boolean setAllocationSize) throws NTStatusException {
         return null;
@@ -161,7 +161,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
     @Override
     @NotImplemented
     public void readDirectory(
-            String dirName,
+            OpenContext ctx,
             String pattern,
             String marker,
             Predicate<FileInfo> consumer) throws NTStatusException {
@@ -169,7 +169,7 @@ public class WinFspStubFS extends AbstractWinFspFS {
 
     @Override
     @NotImplemented
-    public FileInfo getDirInfoByName(String parentDirName, String fileName)
+    public FileInfo getDirInfoByName(OpenContext parentDirCtx, String fileName)
             throws NTStatusException {
         return null;
     }

@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 final class FSHelper {
 
@@ -32,7 +31,6 @@ final class FSHelper {
     private Pointer builtInAdminSID;
 
     private final ConcurrentMap<Long, OpenContext> openContexts;
-    private final AtomicLong nextOpenContextKey;
 
     FSHelper(WinFspFS winfsp, MountOptions options) throws MountException {
         this.winfsp = Objects.requireNonNull(winfsp);
@@ -44,7 +42,8 @@ final class FSHelper {
                         RUNTIME,
                         LibAdvapi32.WinBuiltinAdministratorsSid
                 );
-            } else {
+            }
+            else {
                 this.builtInAdminSID = null;
             }
         } catch (NTStatusException e) {
@@ -52,7 +51,6 @@ final class FSHelper {
         }
 
         this.openContexts = new ConcurrentHashMap<>();
-        this.nextOpenContextKey = new AtomicLong(0);
     }
 
     void free() {
@@ -151,7 +149,8 @@ final class FSHelper {
                 final byte[] securityDescriptor;
                 if (this.builtInAdminSID == null) {
                     securityDescriptor = SecurityDescriptorUtils.toBytes(pSecurityDescriptor);
-                } else {
+                }
+                else {
                     Pointer pSDWithOwnerAndGroupSet = SecurityDescriptorUtils.setOwnerAndGroup(
                             RUNTIME,
                             pSecurityDescriptor,
@@ -169,7 +168,7 @@ final class FSHelper {
                     reparsePoint = new ReparsePoint(reparsePointData, reparseTag);
                 }
 
-                FileInfo fi = winfsp.create(
+                OpenResult res = winfsp.create(
                         fileName,
                         CreateOptions.setOf(createOptions),
                         grantedAccess,
@@ -179,8 +178,8 @@ final class FSHelper {
                         reparsePoint
                 );
 
-                putOpenFileInfo(pFileInfo, fi);
-                putFileContext(ppFileContext, fi);
+                putFileContext(ppFileContext, res);
+                putOpenFileInfo(pFileInfo, res.getFileInfo());
 
                 return 0;
             } catch (NTStatusException e) {
@@ -195,14 +194,14 @@ final class FSHelper {
         fsi.Open.set((pFS, pFileName, createOptions, grantedAccess, ppFileContext, pFileInfo) -> {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
-                FileInfo fi = winfsp.open(
+                OpenResult res = winfsp.open(
                         fileName,
                         CreateOptions.setOf(createOptions),
                         grantedAccess
                 );
 
-                putOpenFileInfo(pFileInfo, fi);
-                putFileContext(ppFileContext, fi);
+                putFileContext(ppFileContext, res);
+                putOpenFileInfo(pFileInfo, res.getFileInfo());
 
                 return 0;
             } catch (NTStatusException e) {
@@ -217,7 +216,7 @@ final class FSHelper {
         fsi.Overwrite.set((pFS, pFileContext, fileAttributes, replaceFileAttributes, allocationSize, pFileInfo) -> {
             try {
                 FileInfo fi = winfsp.overwrite(
-                        ctxValue(pFileContext).getPath(),
+                        ctxValue(pFileContext),
                         FileAttributes.setOf(fileAttributes),
                         bool(replaceFileAttributes),
                         allocationSize
@@ -258,7 +257,7 @@ final class FSHelper {
         fsi.Read.set((pFS, pFileContext, pBuffer, offset, length, pBytesTransferred) -> {
             try {
                 long bytesTransferred = winfsp.read(
-                        ctxValue(pFileContext).getPath(),
+                        ctxValue(pFileContext),
                         pBuffer,
                         offset,
                         length
@@ -281,7 +280,7 @@ final class FSHelper {
                        pBytesTransferred, pFileInfo) -> {
             try {
                 WriteResult res = winfsp.write(
-                        ctxValue(pFileContext).getPath(),
+                        ctxValue(pFileContext),
                         pBuffer,
                         offset,
                         length,
@@ -307,10 +306,10 @@ final class FSHelper {
     void initFlush(FSP_FILE_SYSTEM_INTERFACE fsi) {
         fsi.Flush.set((pFS, pFileContext, pFileInfo) -> {
             try {
-                String fileName = (pFileContext == null) ? null : ctxValue(pFileContext).getPath();
-                FileInfo fi = winfsp.flush(fileName);
+                OpenContext ctx = (pFileContext == null) ? null : ctxValue(pFileContext);
+                FileInfo fi = winfsp.flush(ctx);
 
-                if (fileName != null && fi != null) {
+                if (ctx != null && fi != null) {
                     putFileInfo(pFileInfo, fi);
                 }
 
@@ -367,7 +366,7 @@ final class FSHelper {
         fsi.SetFileSize.set((pFS, pFileContext, newSize, setAllocationSize, pFileInfo) -> {
             try {
                 FileInfo res = winfsp.setFileSize(
-                        ctxValue(pFileContext).getPath(),
+                        ctxValue(pFileContext),
                         newSize,
                         bool(setAllocationSize)
                 );
@@ -479,8 +478,7 @@ final class FSHelper {
                 allAdded.bool = true;
 
                 winfsp.readDirectory(
-
-                        ctxValue(pFileContext).getPath(),
+                        ctxValue(pFileContext),
                         pattern,
                         marker,
                         (fi) -> {
@@ -598,8 +596,8 @@ final class FSHelper {
             try {
                 String fileName = StringUtils.fromPointer(pFileName);
                 OpenContext ctx = bool(isDirectory)
-                        ? OpenContext.newDirectoryContext(fileName)
-                        : OpenContext.newFileContext(fileName);
+                        ? OpenContext.newDirectoryContext(0L, fileName)
+                        : OpenContext.newFileContext(0L, fileName);
 
                 winfsp.getReparsePointData(ctx);
 
@@ -632,7 +630,7 @@ final class FSHelper {
         fsi.GetDirInfoByName.set((pFS, pFileContext, pFileName, pDirInfo) -> {
             try {
                 FileInfo fi = winfsp.getDirInfoByName(
-                        ctxValue(pFileContext).getPath(),
+                        ctxValue(pFileContext),
                         StringUtils.fromPointer(pFileName)
                 );
 
@@ -663,20 +661,21 @@ final class FSHelper {
         return pFileContext.address();
     }
 
-    private void putFileContext(Pointer ppFileContext, FileInfo fi) {
-        boolean isDirectory = fi.getFileAttributes().contains(FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
+    private void putFileContext(Pointer ppFileContext, OpenResult res) throws NTStatusException {
+        boolean isDirectory = res.getFileInfo().getFileAttributes().contains(FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
 
-        long key;
-        do {
-            key = nextOpenContextKey.incrementAndGet();
-        } while (key == 0L || (int) key == 0); // ensure we never get a 0 value, either in 32-bit or 64-bit arch
+        long handle = res.getFileHandle();
+        if (handle == 0L || (int) handle == 0) {
+            // ensure we never put a 0 address, either in 32-bit or 64-bit arch
+            throw new NTStatusException(0xC00000E5); // STATUS_INTERNAL_ERROR
+        }
 
         OpenContext ctx = isDirectory
-                ? OpenContext.newDirectoryContext(fi.getFileName())
-                : OpenContext.newFileContext(fi.getFileName());
+                ? OpenContext.newDirectoryContext(handle, res.getFileInfo().getFileName())
+                : OpenContext.newFileContext(handle, res.getFileInfo().getFileName());
 
-        openContexts.put(key, ctx);
-        ppFileContext.putAddress(0, key);
+        openContexts.put(handle, ctx);
+        ppFileContext.putAddress(0, handle);
     }
 
     private static boolean bool(byte val) {

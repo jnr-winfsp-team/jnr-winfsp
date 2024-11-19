@@ -22,10 +22,23 @@ public class WinFspMemFS extends WinFspStubFS {
         if (args.length > 0)
             mountPoint = Path.of(args[0]);
 
-        var memFS = new WinFspMemFS(true);
+        boolean verbose = false;
+        boolean debug = false;
+        if (args.length > 1 && args[1].equals("-v")) {
+            verbose = true;
+        }
+        else if (args.length > 1 && args[1].equals("-vv")) {
+            debug = true;
+        }
+        else if (args.length > 1 && args[1].equals("-vvv")) {
+            verbose = true;
+            debug = true;
+        }
+
+        var memFS = new WinFspMemFS(verbose);
         System.out.printf("Mounting %s ...%n", mountPoint == null ? "" : mountPoint);
         ServiceRunner.mountLocalDriveAsService("WinFspMemFS", memFS, mountPoint, new MountOptions()
-                .setDebug(false)
+                .setDebug(debug)
                 .setCase(MountOptions.CaseOption.CASE_SENSITIVE)
                 .setSectorSize(512)
                 .setSectorsPerAllocationUnit(1)

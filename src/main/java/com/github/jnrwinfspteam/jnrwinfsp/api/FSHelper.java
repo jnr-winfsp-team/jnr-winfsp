@@ -28,6 +28,7 @@ final class FSHelper {
 
     private final WinFspFS winfsp;
     private final PrintStream verboseErr;
+    private final LibWinFsp.GetReparsePointByNameCallback getReparsePointCallback;
     private Pointer builtInAdminSID;
 
     private final ConcurrentMap<Long, OpenContext> openContexts;
@@ -35,6 +36,7 @@ final class FSHelper {
     FSHelper(WinFspFS winfsp, MountOptions options) throws MountException {
         this.winfsp = Objects.requireNonNull(winfsp);
         this.verboseErr = options.hasDebug() ? System.err : new PrintStream(OutputStream.nullOutputStream());
+        this.getReparsePointCallback = newGetReparsePointByNameCallback();
 
         try {
             if (options.hasForceBuiltinAdminOwnerAndGroup()) {
@@ -108,7 +110,7 @@ final class FSHelper {
                 if (opSR.isEmpty()) {
                     byte res = LibWinFsp.INSTANCE.FspFileSystemFindReparsePoint(
                             pFS,
-                            newGetReparsePointByNameCallback(),
+                            this.getReparsePointCallback,
                             null,
                             pFileName,
                             pFileAttributes // this stores the reparse point index in case res is TRUE
@@ -523,7 +525,7 @@ final class FSHelper {
                                       pBuffer, pSize) -> {
             return LibWinFsp.INSTANCE.FspFileSystemResolveReparsePoints(
                     pFS,
-                    newGetReparsePointByNameCallback(),
+                    this.getReparsePointCallback,
                     null,
                     pFileName,
                     reparsePointIndex,

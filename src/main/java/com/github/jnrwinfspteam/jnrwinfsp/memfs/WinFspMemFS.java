@@ -269,15 +269,17 @@ public class WinFspMemFS extends WinFspStubFS {
             throws NTStatusException {
 
         verboseOut.printf("== READ == %s off=%d len=%d%n", ctx.getPath(), offset, length);
+
+        final FileObj file;
         synchronized (objects) {
             Path filePath = getPath(ctx.getPath());
-            FileObj file = getFileObject(filePath);
-
-            int bytesRead = file.read(pBuffer, offset, length);
-            verboseOut.printf("== READ RETURNED == bytes=%d%n", bytesRead);
-
-            return bytesRead;
+            file = getFileObject(filePath);
         }
+
+        int bytesRead = file.read(pBuffer, offset, length);
+        verboseOut.printf("== READ RETURNED == bytes=%d%n", bytesRead);
+
+        return bytesRead;
     }
 
     @Override
@@ -291,21 +293,23 @@ public class WinFspMemFS extends WinFspStubFS {
         verboseOut.printf("== WRITE == %s off=%d len=%d writeToEnd=%s constrained=%s%n",
                 ctx.getPath(), offset, length, writeToEndOfFile, constrainedIo
         );
+
+        final FileObj file;
         synchronized (objects) {
             Path filePath = getPath(ctx.getPath());
-            FileObj file = getFileObject(filePath);
-
-            final long bytesTransferred;
-            if (constrainedIo)
-                bytesTransferred = file.constrainedWrite(pBuffer, offset, length);
-            else
-                bytesTransferred = file.write(pBuffer, offset, length, writeToEndOfFile);
-
-            FileInfo info = file.generateFileInfo();
-            verboseOut.printf("== WRITE RETURNED == bytes=%d %s%n", bytesTransferred, info);
-
-            return new WriteResult(bytesTransferred, info);
+            file = getFileObject(filePath);
         }
+
+        final long bytesTransferred;
+        if (constrainedIo)
+            bytesTransferred = file.constrainedWrite(pBuffer, offset, length);
+        else
+            bytesTransferred = file.write(pBuffer, offset, length, writeToEndOfFile);
+
+        FileInfo info = file.generateFileInfo();
+        verboseOut.printf("== WRITE RETURNED == bytes=%d %s%n", bytesTransferred, info);
+
+        return new WriteResult(bytesTransferred, info);
     }
 
     @Override

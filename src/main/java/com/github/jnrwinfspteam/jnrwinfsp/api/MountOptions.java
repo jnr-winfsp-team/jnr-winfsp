@@ -1,10 +1,12 @@
 package com.github.jnrwinfspteam.jnrwinfsp.api;
 
+import java.io.PrintStream;
 import java.util.Objects;
 
 public class MountOptions {
 
     private boolean debug = false;
+    private PrintStream errorPrinter = null;
     private CaseOption caseOption = CaseOption.CASE_SENSITIVE;
     private int sectorSize = 4096;
     private int sectorsPerAllocationUnit = 1;
@@ -20,6 +22,16 @@ public class MountOptions {
      */
     public MountOptions setDebug(boolean debug) {
         this.debug = debug;
+        return this;
+    }
+
+    /**
+     * Sets "errorPrinter" option (default is {@code null}.
+     *
+     * @param errorPrinter If non-null, then jnr-winfsp errors will be printed to the provided print stream
+     */
+    public MountOptions setErrorPrinter(PrintStream errorPrinter) {
+        this.errorPrinter = errorPrinter;
         return this;
     }
 
@@ -97,6 +109,10 @@ public class MountOptions {
 
     public boolean hasDebug() {
         return debug;
+    }
+
+    public PrintStream getErrorPrinter() {
+        return errorPrinter;
     }
 
     public CaseOption getCaseOption() {

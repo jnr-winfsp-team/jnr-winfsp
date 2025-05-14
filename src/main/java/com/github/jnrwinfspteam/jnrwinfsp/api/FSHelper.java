@@ -35,7 +35,8 @@ final class FSHelper {
 
     FSHelper(WinFspFS winfsp, MountOptions options) throws MountException {
         this.winfsp = Objects.requireNonNull(winfsp);
-        this.verboseErr = options.hasDebug() ? System.err : new PrintStream(OutputStream.nullOutputStream());
+        this.verboseErr = options.getErrorPrinter() != null ? options.getErrorPrinter()
+                : (options.hasDebug() ? System.err : new PrintStream(OutputStream.nullOutputStream()));
         this.getReparsePointCallback = newGetReparsePointByNameCallback();
 
         try {

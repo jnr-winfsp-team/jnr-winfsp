@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
 
 final class FSHelper {
 
@@ -30,6 +31,7 @@ final class FSHelper {
 
     private final WinFspFS winfsp;
     private final PrintStream verboseErr;
+    private final Predicate<Throwable> errorFilter;
     private final LibWinFsp.GetReparsePointByNameCallback getReparsePointCallback;
     private Pointer builtInAdminSID;
 
@@ -39,6 +41,7 @@ final class FSHelper {
         this.winfsp = Objects.requireNonNull(winfsp);
         this.verboseErr = options.getErrorPrinter() != null ? options.getErrorPrinter()
                 : (options.hasDebug() ? System.err : null);
+        this.errorFilter = Objects.requireNonNullElse(options.getErrorFilter(), FSHelper::defaultFilterError);
         this.getReparsePointCallback = newGetReparsePointByNameCallback();
 
         try {
@@ -854,7 +857,7 @@ final class FSHelper {
     }
 
     private void logError(Throwable ex, String op, String path) {
-        if (this.verboseErr != null) {
+        if (this.verboseErr != null && this.errorFilter.test(ex)) {
             verboseErr.printf(
                     "%s [%s] ERROR - %s - %s%s%n",
                     ERROR_TIME_FORMATTER.format(LocalDateTime.now()),
@@ -915,5 +918,9 @@ final class FSHelper {
         Pointer p = PointerUtils.allocateMemory(RUNTIME, bytes.length);
         p.put(0, bytes, 0, bytes.length);
         return p;
+    }
+
+    private static boolean defaultFilterError(Throwable e) {
+        return true;
     }
 }

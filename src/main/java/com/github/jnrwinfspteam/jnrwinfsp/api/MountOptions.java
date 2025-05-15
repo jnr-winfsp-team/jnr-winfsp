@@ -2,11 +2,13 @@ package com.github.jnrwinfspteam.jnrwinfsp.api;
 
 import java.io.PrintStream;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public class MountOptions {
 
     private boolean debug = false;
     private PrintStream errorPrinter = null;
+    private Predicate<Throwable> errorFilter = null;
     private CaseOption caseOption = CaseOption.CASE_SENSITIVE;
     private int sectorSize = 4096;
     private int sectorsPerAllocationUnit = 1;
@@ -32,6 +34,18 @@ public class MountOptions {
      */
     public MountOptions setErrorPrinter(PrintStream errorPrinter) {
         this.errorPrinter = errorPrinter;
+        return this;
+    }
+
+    /**
+     * Sets "errorFilter" option (default is {@code null}.
+     *
+     * @param errorFilter If non-null, then only jnr-winfsp errors which pass the filter will be printed to a print
+     *                    stream (if any is configured via {@link #setDebug(boolean)} or
+     *                    {@link #setErrorPrinter(PrintStream)}).
+     */
+    public MountOptions setErrorFilter(Predicate<Throwable> errorFilter) {
+        this.errorFilter = errorFilter;
         return this;
     }
 
@@ -113,6 +127,10 @@ public class MountOptions {
 
     public PrintStream getErrorPrinter() {
         return errorPrinter;
+    }
+
+    public Predicate<Throwable> getErrorFilter() {
+        return errorFilter;
     }
 
     public CaseOption getCaseOption() {

@@ -3,7 +3,6 @@ package com.github.jnrwinfspteam.jnrwinfsp.memfs;
 import com.github.jnrwinfspteam.jnrwinfsp.api.*;
 import com.github.jnrwinfspteam.jnrwinfsp.service.ServiceException;
 import com.github.jnrwinfspteam.jnrwinfsp.service.ServiceRunner;
-import com.github.jnrwinfspteam.jnrwinfsp.util.NaturalOrderComparator;
 import jnr.ffi.Pointer;
 
 import java.io.OutputStream;
@@ -17,6 +16,7 @@ import java.util.function.Predicate;
  * A simple in-memory file system.
  */
 public class WinFspMemFS extends WinFspStubFS {
+
     public static void main(String[] args) throws NTStatusException, ServiceException {
         Path mountPoint = null;
         if (args.length > 0)
@@ -46,9 +46,7 @@ public class WinFspMemFS extends WinFspStubFS {
         );
     }
 
-
     private static final String ROOT_SECURITY_DESCRIPTOR = "O:BAG:BAD:PAR(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;WD)";
-    private static final Comparator<String> NATURAL_ORDER = new NaturalOrderComparator();
     private static final long MAX_FILE_NODES = 10240;
     private static final long MAX_FILE_SIZE = 16 * 1024 * 1024;
 
@@ -69,7 +67,6 @@ public class WinFspMemFS extends WinFspStubFS {
         this.rootPath = Path.of("\\").normalize();
         this.objects = new HashMap<>();
         this.objects.put(rootPath.toString(), new DirObj(
-                null,
                 rootPath,
                 SecurityDescriptorHandler.securityDescriptorToBytes(ROOT_SECURITY_DESCRIPTOR),
                 null
@@ -149,9 +146,9 @@ public class WinFspMemFS extends WinFspStubFS {
 
             MemoryObj obj;
             if (createOptions.contains(CreateOptions.FILE_DIRECTORY_FILE))
-                obj = new DirObj(parent, filePath, securityDescriptor, reparsePoint);
+                obj = new DirObj(filePath, securityDescriptor, reparsePoint);
             else {
-                var file = new FileObj(parent, filePath, securityDescriptor, reparsePoint);
+                var file = new FileObj(filePath, securityDescriptor, reparsePoint);
                 file.setAllocationSize(Math.toIntExact(allocationSize));
                 obj = file;
             }
@@ -433,15 +430,23 @@ public class WinFspMemFS extends WinFspStubFS {
                     throw new NTStatusException(0xC0000022); // STATUS_ACCESS_DENIED
             }
 
-            // Rename file or directory (and all existing descendants)
-            for (var obj : List.copyOf(objects.values())) {
-                if (obj.getPath().startsWith(oldFilePath)) {
-                    Path relativePath = oldFilePath.relativize(obj.getPath());
-                    Path newObjPath = newFilePath.resolve(relativePath);
-                    MemoryObj newObj = removeObject(obj.getPath());
-                    newObj.setPath(newObjPath);
-                    putObject(newObj);
-                }
+            // Rename file or directory (and all existing descendants).
+            // Sort by path so parents are always processed before their children:
+            // putObject() looks up the new parent by path, so the parent must already
+            // exist under its new key when a child is inserted.
+            List<MemoryObj> toRename = new ArrayList<>();
+            for (MemoryObj obj : objects.values()) {
+                if (obj.getPath().startsWith(oldFilePath))
+                    toRename.add(obj);
+            }
+            toRename.sort(Comparator.comparing(MemoryObj::getPath));
+
+            for (MemoryObj obj : toRename) {
+                Path relativePath = oldFilePath.relativize(obj.getPath());
+                Path newObjPath = newFilePath.resolve(relativePath);
+                MemoryObj newObj = removeObject(obj.getPath());
+                newObj.setPath(newObjPath);
+                putObject(newObj);
             }
 
             verboseOut.println("== RENAME RETURNED ==");
@@ -508,21 +513,17 @@ public class WinFspMemFS extends WinFspStubFS {
                 }
             }
 
-            final String finalMarker = marker;
-            objects.values().stream()
-                    .filter(obj -> obj.getParent() != null &&
-                            obj.getParent().getPath().equals(dir.getPath()))
-                    .sorted(Comparator.comparing(MemoryObj::getName, NATURAL_ORDER))
-                    .dropWhile(obj -> isBeforeMarker(obj.getName(), finalMarker))
-                    .map(obj -> obj.generateFileInfo(obj.getName()))
-                    .takeWhile(consumer)
-                    .forEach(o -> {
-                    });
-        }
-    }
+            // O(log n) to find the marker position; children are pre-sorted in natural order.
+            // tailMap(marker, false) gives entries with name strictly greater than marker,
+            Collection<MemoryObj> subset = (marker != null)
+                    ? dir.getChildren().tailMap(marker, false).values()
+                    : dir.getChildren().values();
 
-    private static boolean isBeforeMarker(String name, String marker) {
-        return marker != null && NATURAL_ORDER.compare(name, marker) <= 0;
+            for (MemoryObj obj : subset) {
+                if (!consumer.test(obj.generateFileInfo(obj.getName())))
+                    break;
+            }
+        }
     }
 
     @Override
@@ -596,15 +597,7 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     private boolean isNotEmptyDirectory(MemoryObj dir) {
-        if (dir instanceof DirObj) {
-            for (var obj : objects.values()) {
-                if (obj.getPath().startsWith(dir.getPath())
-                        && !obj.getPath().equals(dir.getPath()))
-                    return true;
-            }
-        }
-
-        return false;
+        return dir instanceof DirObj && !((DirObj) dir).getChildren().isEmpty();
     }
 
     private Path getPath(String filePath) {
@@ -640,14 +633,28 @@ public class WinFspMemFS extends WinFspStubFS {
     }
 
     private void putObject(MemoryObj obj) {
+
         objects.put(getPathKey(obj.getPath()), obj);
-        obj.touchParent();
+
+        DirObj parentObj = (DirObj) objects.get(getPathKey(obj.getPath().getParent()));
+        if (parentObj != null) {
+            parentObj.getChildren().put(obj.getName(), obj);
+            parentObj.touch();
+        }
     }
 
     private MemoryObj removeObject(Path filePath) {
+
         MemoryObj obj = objects.remove(getPathKey(filePath));
-        if (obj != null)
-            obj.touchParent();
+
+        if (obj != null) {
+            DirObj parentObj = (DirObj) objects.get(getPathKey(obj.getPath().getParent()));
+            if (parentObj != null) {
+                parentObj.getChildren().remove(obj.getName());
+                parentObj.touch();
+            }
+        }
+
         return obj;
     }
 

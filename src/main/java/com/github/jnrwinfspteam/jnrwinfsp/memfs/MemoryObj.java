@@ -11,7 +11,6 @@ import java.util.Objects;
 import java.util.Set;
 
 public abstract class MemoryObj {
-    private final MemoryObj parent;
     private Path path;
     private final Set<FileAttributes> fileAttributes;
     private byte[] securityDescriptor;
@@ -23,8 +22,7 @@ public abstract class MemoryObj {
     private WinSysTime changeTime;
     private long indexNumber;
 
-    public MemoryObj(MemoryObj parent, Path path, byte[] securityDescriptor, ReparsePoint reparsePoint) {
-        this.parent = parent;
+    public MemoryObj(Path path, byte[] securityDescriptor, ReparsePoint reparsePoint) {
         this.path = Objects.requireNonNull(path);
         this.fileAttributes = EnumSet.noneOf(FileAttributes.class);
         this.securityDescriptor = Objects.requireNonNull(securityDescriptor);
@@ -54,10 +52,6 @@ public abstract class MemoryObj {
 
     public final void setPath(Path path) {
         this.path = Objects.requireNonNull(path);
-    }
-
-    public final MemoryObj getParent() {
-        return parent;
     }
 
     public final Set<FileAttributes> getFileAttributes() {
@@ -136,11 +130,5 @@ public abstract class MemoryObj {
         setAccessTime(now);
         setWriteTime(now);
         setChangeTime(now);
-    }
-
-    public final void touchParent() {
-        MemoryObj parent = getParent();
-        if (parent != null)
-            parent.touch();
     }
 }

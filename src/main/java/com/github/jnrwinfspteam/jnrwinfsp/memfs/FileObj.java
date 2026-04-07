@@ -15,8 +15,8 @@ public class FileObj extends MemoryObj {
     private byte[] data;
     private int fileSize;
 
-    public FileObj(DirObj parent, Path path, byte[] securityDescriptor, ReparsePoint reparsePoint) {
-        super(parent, path, securityDescriptor, reparsePoint);
+    public FileObj(Path path, byte[] securityDescriptor, ReparsePoint reparsePoint) {
+        super(path, securityDescriptor, reparsePoint);
         this.data = new byte[0];
         this.fileSize = 0;
         getFileAttributes().add(FileAttributes.FILE_ATTRIBUTE_ARCHIVE);

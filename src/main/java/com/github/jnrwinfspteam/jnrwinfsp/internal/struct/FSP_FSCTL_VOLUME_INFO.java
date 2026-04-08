@@ -31,11 +31,10 @@ public class FSP_FSCTL_VOLUME_INFO extends Struct {
             if (byteLength > VolumeLabel.length - StringUtils.CS_BYTES_PER_CHAR)
                 throw new IllegalArgumentException("label is too large");
 
-            int i = 0;
-            for (; i < byteLength; i++) {
-                this.VolumeLabel[i].set(bytes.get(i));
-            }
-            this.VolumeLabel[i].set((byte) '\0');
+            byte[] labelBytes = new byte[byteLength];
+            bytes.get(labelBytes);
+            Struct.getMemory(this).put(VolumeLabel[0].offset(), labelBytes, 0, byteLength);
+            VolumeLabel[byteLength].set((byte) 0);
             this.VolumeLabelLength.set(byteLength);
         } catch (CharacterCodingException cce) {
             throw new RuntimeException(cce);

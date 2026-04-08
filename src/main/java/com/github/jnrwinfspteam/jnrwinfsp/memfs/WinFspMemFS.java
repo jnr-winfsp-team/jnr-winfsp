@@ -57,6 +57,7 @@ public class WinFspMemFS extends WinFspStubFS {
     private long nextIndexNumber;
     private String volumeLabel;
 
+    private final boolean verbose;
     private final PrintStream verboseOut;
 
     public WinFspMemFS() throws NTStatusException {
@@ -76,6 +77,7 @@ public class WinFspMemFS extends WinFspStubFS {
         this.nextIndexNumber = 1L;
         this.volumeLabel = "MemFS";
 
+        this.verbose = verbose;
         this.verboseOut = verbose ? System.out : new PrintStream(OutputStream.nullOutputStream());
     }
 
@@ -100,7 +102,7 @@ public class WinFspMemFS extends WinFspStubFS {
 
     @Override
     public Optional<SecurityResult> getSecurityByName(String fileName) throws NTStatusException {
-        verboseOut.printf("== GET SECURITY BY NAME == %s%n", fileName);
+        if (verbose) verboseOut.printf("== GET SECURITY BY NAME == %s%n", fileName);
         synchronized (objects) {
             Path filePath = getPath(fileName);
             if (!hasObject(filePath))
@@ -108,11 +110,13 @@ public class WinFspMemFS extends WinFspStubFS {
 
             MemoryObj obj = getObject(filePath);
             byte[] securityDescriptor = obj.getSecurityDescriptor();
-            FileInfo info = obj.generateFileInfo();
-            verboseOut.printf("== GET SECURITY BY NAME RETURNED == %s %s%n",
-                    SecurityDescriptorHandler.securityDescriptorToString(securityDescriptor), info);
+            if (verbose) {
+                FileInfo info = obj.generateFileInfo();
+                verboseOut.printf("== GET SECURITY BY NAME RETURNED == %s %s%n",
+                        SecurityDescriptorHandler.securityDescriptorToString(securityDescriptor), info);
+            }
 
-            return Optional.of(new SecurityResult(securityDescriptor, EnumSet.copyOf(obj.getFileAttributes())));
+            return Optional.of(new SecurityResult(securityDescriptor, obj.getFileAttributes()));
         }
     }
 
@@ -125,7 +129,7 @@ public class WinFspMemFS extends WinFspStubFS {
                              long allocationSize,
                              ReparsePoint reparsePoint) throws NTStatusException {
 
-        verboseOut.printf("== CREATE == %s co=%s ga=%X fa=%s sd=%s as=%d rp=%s%n",
+        if (verbose) verboseOut.printf("== CREATE == %s co=%s ga=%X fa=%s sd=%s as=%d rp=%s%n",
                 fileName, createOptions, grantedAccess, fileAttributes,
                 SecurityDescriptorHandler.securityDescriptorToString(securityDescriptor), allocationSize, reparsePoint
         );
@@ -462,7 +466,7 @@ public class WinFspMemFS extends WinFspStubFS {
             MemoryObj memObj = getObject(filePath);
 
             byte[] securityDescriptor = memObj.getSecurityDescriptor();
-            verboseOut.printf(
+            if (verbose) verboseOut.printf(
                     "== GET SECURITY RETURNED == %s%n",
                     SecurityDescriptorHandler.securityDescriptorToString(securityDescriptor)
             );
@@ -475,7 +479,7 @@ public class WinFspMemFS extends WinFspStubFS {
     public void setSecurity(OpenContext ctx, byte[] securityDescriptor)
             throws NTStatusException {
 
-        verboseOut.printf(
+        if (verbose) verboseOut.printf(
                 "== SET SECURITY == %s sd=%s%n",
                 ctx,
                 SecurityDescriptorHandler.securityDescriptorToString(securityDescriptor)

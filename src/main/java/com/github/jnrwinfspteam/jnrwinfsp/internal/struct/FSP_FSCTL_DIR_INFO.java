@@ -48,8 +48,8 @@ public class FSP_FSCTL_DIR_INFO extends Struct {
     }
 
     public void setFileName(byte[] fileNameBytes) {
-        if (fileNameBytes.length != FileNameBuf.length)
-            throw new IllegalArgumentException("file name size must match the configured length");
+        if (fileNameBytes.length > FileNameBuf.length)
+            throw new IllegalArgumentException("file name size must not exceed the configured length");
 
         if (fileNameBytes.length > 0) {
             Struct.getMemory(this).put(FileNameBuf[0].offset(), fileNameBytes, 0, fileNameBytes.length);

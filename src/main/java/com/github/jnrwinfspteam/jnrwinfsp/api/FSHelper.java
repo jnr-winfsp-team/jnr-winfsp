@@ -33,6 +33,7 @@ final class FSHelper {
     private final PrintStream verboseErr;
     private final Predicate<Throwable> errorFilter;
     private final LibWinFsp.GetReparsePointByNameCallback getReparsePointCallback;
+    private final int maxFileNameBytes;
     private Pointer builtInAdminSID;
 
     private final ConcurrentMap<Long, OpenContext> openContexts;
@@ -43,6 +44,7 @@ final class FSHelper {
                 : (options.hasDebug() ? System.err : null);
         this.errorFilter = Objects.requireNonNullElse(options.getErrorFilter(), FSHelper::defaultFilterError);
         this.getReparsePointCallback = newGetReparsePointByNameCallback();
+        this.maxFileNameBytes = Math.multiplyExact(options.getMaxFileNameLength(), StringUtils.CS_BYTES_PER_CHAR);
 
         try {
             if (options.hasForceBuiltinAdminOwnerAndGroup()) {
@@ -609,37 +611,40 @@ final class FSHelper {
                 allAdded.bool = true;
 
                 ctx = ctxValue(pFileContext);
-                winfsp.readDirectory(
-                        ctx,
-                        pattern,
-                        marker,
-                        (fi) -> {
-                            if (!allAdded.bool)
-                                return false;
+                Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(maxFileNameBytes);
+                try {
+                    winfsp.readDirectory(
+                            ctx,
+                            pattern,
+                            marker,
+                            (fi) -> {
+                                if (!allAdded.bool)
+                                    return false;
 
-                            String fileName = fi.getFileName();
-                            byte[] fileNameBytes = StringUtils.toBytes(fileName, false);
+                                byte[] fileNameBytes = StringUtils.toBytes(fi.getFileName(), false);
 
-                            Pointered<FSP_FSCTL_DIR_INFO> diP = FSP_FSCTL_DIR_INFO.create(fileNameBytes.length);
-                            _putDirInfo(diP.get(), fi, fileNameBytes);
+                                _putDirInfo(diP.get(), fi, fileNameBytes);
 
-                            byte added = LibWinFsp.INSTANCE.FspFileSystemAddDirInfo(
-                                    diP.getPointer(),
-                                    pBuffer,
-                                    length,
-                                    pBytesTransferred
-                            );
-                            diP.free(); // avoid memory leak
+                                byte added = LibWinFsp.INSTANCE.FspFileSystemAddDirInfo(
+                                        diP.getPointer(),
+                                        pBuffer,
+                                        length,
+                                        pBytesTransferred
+                                );
 
-                            allAdded.bool &= bool(added);
+                                allAdded.bool &= bool(added);
 
-                            return bool(added);
-                        }
-                );
+                                return bool(added);
+                            }
+                    );
 
-                // add one final null entry to mark the end of the operation
-                if (allAdded.bool)
-                    LibWinFsp.INSTANCE.FspFileSystemAddDirInfo(null, pBuffer, length, pBytesTransferred);
+                    // add one final null entry to mark the end of the operation
+                    if (allAdded.bool)
+                        LibWinFsp.INSTANCE.FspFileSystemAddDirInfo(null, pBuffer, length, pBytesTransferred);
+                }
+                finally {
+                    diP.free();
+                }
 
                 return 0;
             }
@@ -895,7 +900,7 @@ final class FSHelper {
     }
 
     private static void _putDirInfo(FSP_FSCTL_DIR_INFO diOut, FileInfo fi, byte[] fileNameBytes) {
-        diOut.Size.set(Struct.size(diOut)); // size already includes file name length
+        diOut.Size.set(Struct.size(diOut) - diOut.FileNameBuf.length + fileNameBytes.length);
         _putFileInfo(diOut.FileInfo, fi);
         diOut.setFileName(fileNameBytes);
     }

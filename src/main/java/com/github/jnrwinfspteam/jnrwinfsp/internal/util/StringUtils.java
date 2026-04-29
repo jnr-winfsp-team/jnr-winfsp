@@ -78,8 +78,7 @@ public final class StringUtils {
      * the bytes.
      * <p>
      * This code is adapted from jnr.ffi.provider.converters.StringResultConverter but with a
-     * small fix to handle the case where a null terminator character is shorter than the
-     * configured terminator length (2 in the case of UTF-16{LE|BE})
+     * small fix to handle multibyte-alignment issues.
      *
      * @return a string (null if the pointer is null)
      */
@@ -90,18 +89,26 @@ public final class StringUtils {
         Search:
         for (int idx = 0; ; ) {
             idx += pStr.indexOf(idx, (byte) 0);
+
+            // Align idx up to the next char boundary. If indexOf landed on an
+            // unaligned zero (e.g. the 0x00 in 0x00 0x03 of U+0300 in UTF-16LE),
+            // skip past it and resume searching from the aligned position.
+            boolean wasAligned = true;
+            while (idx % CS_BYTES_PER_CHAR != 0) {
+                idx++;
+                wasAligned = false;
+            }
+            if (!wasAligned)
+                continue Search;
+
+            // idx is aligned and points at a zero byte. Check the rest of the char.
             for (int tcount = 1; tcount < CS_BYTES_PER_CHAR; tcount++) {
                 byte b = pStr.getByte(idx + tcount);
                 if (b != 0) {
-                    idx += tcount;
+                    idx += CS_BYTES_PER_CHAR;
                     continue Search;
                 }
             }
-
-            // Small fix here to accommodate enough bytes for the string.
-            // NOTE: this WILL NOT make the string include a null character
-            while (idx % CS_BYTES_PER_CHAR != 0)
-                idx++;
 
             byte[] bytes = new byte[idx];
             pStr.get(0, bytes, 0, bytes.length);
